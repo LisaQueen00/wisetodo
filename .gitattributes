@@ -18,6 +18,7 @@
 *.html text eol=lf
 *.sh text eol=lf
 *.ps1 text eol=lf
+*.md text eol=lf
 
 # Never apply line-ending conversion to binary assets.
 *.png binary
