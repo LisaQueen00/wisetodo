@@ -1,0 +1,11 @@
+# WiseTodo
+
+WiseTodo is a lightweight, always-on-top desktop Todo application with an agent-assisted planning workflow.
+
+The project is currently in early development.
+
+## Development
+
+Local design and setup notes live under `.local/` and are intentionally excluded from Git.
+
+Prerequisites and commands are documented locally in `.local/SETUP.md`.

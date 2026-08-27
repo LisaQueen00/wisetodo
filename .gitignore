@@ -1,2 +1,69 @@
 # Local planning and development notes
 .local/
+
+# Frontend
+node_modules/
+dist/
+.vite/
+.pnpm-store/
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.egg-info/
+backend/dist/
+backend/build/
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/schemas/
+src-tauri/binaries/*
+!src-tauri/binaries/.gitkeep
+
+# Local application data and secrets
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+config.yaml
+.env
+.env.*
+!.env.example
+*.local
+
+# Runtime logs and temporary files
+logs/
+*.log
+*.tmp
+*.temp
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.DS_Store
+Thumbs.db
+Desktop.ini

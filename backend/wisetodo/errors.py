@@ -1,0 +1,29 @@
+from __future__ import annotations
+
+from enum import StrEnum
+from typing import Any
+
+from pydantic import BaseModel
+
+
+class ErrorCode(StrEnum):
+    MODEL_REQUEST_FAILED = "MODEL_REQUEST_FAILED"
+    MODEL_CAPABILITY_INSUFFICIENT = "MODEL_CAPABILITY_INSUFFICIENT"
+    INVALID_AGENT_OUTPUT = "INVALID_AGENT_OUTPUT"
+    TOOL_NOT_FOUND = "TOOL_NOT_FOUND"
+    TOOL_ARGUMENT_INVALID = "TOOL_ARGUMENT_INVALID"
+    TOOL_EXECUTION_FAILED = "TOOL_EXECUTION_FAILED"
+    TODO_VALIDATION_FAILED = "TODO_VALIDATION_FAILED"
+    TODO_NOT_FOUND = "TODO_NOT_FOUND"
+    TODO_SAVE_FAILED = "TODO_SAVE_FAILED"
+    RUN_CANCELLED = "RUN_CANCELLED"
+    CONTEXT_TOO_LARGE = "CONTEXT_TOO_LARGE"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+
+
+class WiseTodoError(BaseModel):
+    code: ErrorCode
+    message: str
+    user_message: str
+    retryable: bool = False
+    details: dict[str, Any] | None = None
