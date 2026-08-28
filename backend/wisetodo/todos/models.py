@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 Priority = Literal[0, 1]
 
@@ -61,3 +61,14 @@ class Todo(BaseModel):
     created_at: datetime
     updated_at: datetime
     items: list[TodoItem] = Field(min_length=2)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def progress(self) -> float:
+        completed_count = sum(item.completed for item in self.items)
+        return completed_count / len(self.items)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def completed(self) -> bool:
+        return all(item.completed for item in self.items)

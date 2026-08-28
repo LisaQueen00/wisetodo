@@ -32,6 +32,8 @@ def test_create_get_and_list_todos(tmp_path: Path) -> None:
         assert listed == [created]
         assert [item.position for item in created.items] == [0, 1]
         assert all(item.todo_id == created.id for item in created.items)
+        assert created.progress == 0.0
+        assert not created.completed
     finally:
         database.dispose()
 
