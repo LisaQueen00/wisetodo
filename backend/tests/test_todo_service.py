@@ -5,6 +5,7 @@ from alembic.config import Config
 from alembic import command
 from wisetodo.database import Database, create_database
 from wisetodo.todos import TodoChanges, TodoInput, TodoService
+from wisetodo.todos.tables import TodoRecord
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -79,5 +80,40 @@ def test_get_and_update_return_none_when_todo_is_missing(tmp_path: Path) -> None
     try:
         assert service.get("missing") is None
         assert service.update("missing", TodoChanges(topic="New topic")) is None
+    finally:
+        database.dispose()
+
+
+def test_list_sorts_by_completion_priority_and_position(tmp_path: Path) -> None:
+    database, service = create_service(tmp_path)
+    try:
+        low_priority = service.create(
+            TodoInput(topic="Low priority", priority=0, items=["One", "Two"])
+        )
+        high_later = service.create(
+            TodoInput(topic="High later", priority=1, items=["One", "Two"])
+        )
+        high_earlier = service.create(
+            TodoInput(topic="High earlier", priority=1, items=["One", "Two"])
+        )
+        completed = service.create(
+            TodoInput(topic="Completed", priority=1, items=["One", "Two"])
+        )
+
+        with database.sessions.begin() as session:
+            session.get_one(TodoRecord, low_priority.id).position = 0
+            session.get_one(TodoRecord, high_later.id).position = 2
+            session.get_one(TodoRecord, high_earlier.id).position = 1
+            completed_record = session.get_one(TodoRecord, completed.id)
+            completed_record.position = 0
+            for item in completed_record.items:
+                item.completed = True
+
+        assert [todo.topic for todo in service.list()] == [
+            "High earlier",
+            "High later",
+            "Low priority",
+            "Completed",
+        ]
     finally:
         database.dispose()

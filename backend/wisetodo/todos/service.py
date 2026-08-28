@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import cast
 
 from sqlalchemy import Select, select
@@ -36,9 +37,8 @@ class TodoService:
 
     def list(self) -> list[Todo]:
         with self._sessions() as session:
-            records = session.scalars(
-                self._record_query().order_by(TodoRecord.position, TodoRecord.created_at)
-            ).all()
+            records = session.scalars(self._record_query()).all()
+            records = sorted(records, key=self._sort_key)
             return [self._to_domain(record) for record in records]
 
     def update(self, todo_id: str, changes: TodoChanges) -> Todo | None:
@@ -72,6 +72,11 @@ class TodoService:
     @staticmethod
     def _record_query() -> Select[tuple[TodoRecord]]:
         return select(TodoRecord).options(selectinload(TodoRecord.items))
+
+    @staticmethod
+    def _sort_key(record: TodoRecord) -> tuple[bool, int, int, datetime, str]:
+        completed = all(item.completed for item in record.items)
+        return completed, -record.priority, record.position, record.created_at, record.id
 
     @staticmethod
     def _to_domain(record: TodoRecord) -> Todo:
