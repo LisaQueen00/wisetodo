@@ -6,7 +6,7 @@ from alembic.config import Config
 from alembic import command
 from wisetodo.database import Database, create_database
 from wisetodo.todos import TodoCaller, TodoChanges, TodoInput, TodoService
-from wisetodo.todos.tables import TodoRecord
+from wisetodo.todos.tables import TodoItemRecord, TodoRecord
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -59,6 +59,41 @@ def test_update_replaces_changed_fields_and_items(tmp_path: Path) -> None:
         assert {item.id for item in updated.items}.isdisjoint(
             item.id for item in created.items
         )
+    finally:
+        database.dispose()
+
+
+def test_update_items_preserves_matches_and_removes_missing_items(tmp_path: Path) -> None:
+    database, service = create_service(tmp_path)
+    try:
+        created = service.create(
+            TodoInput(topic="Learn project", items=["Keep", "Remove", "Completed"])
+        )
+        original_by_topic = {item.topic: item for item in created.items}
+
+        with database.sessions.begin() as session:
+            session.get_one(
+                TodoItemRecord, original_by_topic["Completed"].id
+            ).completed = True
+
+        updated = service.update(
+            created.id,
+            TodoChanges(items=["Completed", "Keep", "New item"]),
+        )
+
+        assert updated is not None
+        updated_by_topic = {item.topic: item for item in updated.items}
+        assert [item.topic for item in updated.items] == ["Completed", "Keep", "New item"]
+        assert updated_by_topic["Completed"].id == original_by_topic["Completed"].id
+        assert updated_by_topic["Completed"].completed
+        assert updated_by_topic["Keep"].id == original_by_topic["Keep"].id
+        assert not updated_by_topic["New item"].completed
+        assert updated_by_topic["New item"].id not in {
+            item.id for item in created.items
+        }
+
+        with database.sessions() as session:
+            assert session.get(TodoItemRecord, original_by_topic["Remove"].id) is None
     finally:
         database.dispose()
 

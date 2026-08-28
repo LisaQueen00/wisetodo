@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import defaultdict, deque
+from collections.abc import Sequence
 from datetime import datetime
 from typing import cast
 
@@ -15,6 +17,8 @@ from wisetodo.todos.models import (
     TodoItem,
 )
 from wisetodo.todos.tables import TodoItemRecord, TodoRecord
+
+TodoItemRecordList = list[TodoItemRecord]
 
 
 class TodoService:
@@ -59,10 +63,7 @@ class TodoService:
             if changes.priority is not None:
                 record.priority = changes.priority
             if changes.items is not None:
-                record.items = [
-                    TodoItemRecord(topic=topic, position=position)
-                    for position, topic in enumerate(changes.items)
-                ]
+                self._update_items(record, changes.items)
 
             session.flush()
             session.refresh(record)
@@ -87,6 +88,21 @@ class TodoService:
     def _sort_key(record: TodoRecord) -> tuple[bool, int, int, datetime, str]:
         completed = all(item.completed for item in record.items)
         return completed, -record.priority, record.position, record.created_at, record.id
+
+    @staticmethod
+    def _update_items(record: TodoRecord, topics: Sequence[str]) -> None:
+        existing_by_topic: defaultdict[str, deque[TodoItemRecord]] = defaultdict(deque)
+        for item in record.items:
+            existing_by_topic[item.topic.strip()].append(item)
+
+        updated_items: TodoItemRecordList = []
+        for position, topic in enumerate(topics):
+            matches = existing_by_topic[topic]
+            item = matches.popleft() if matches else TodoItemRecord(topic=topic)
+            item.position = position
+            updated_items.append(item)
+
+        record.items = updated_items
 
     @staticmethod
     def _to_domain(record: TodoRecord) -> Todo:
