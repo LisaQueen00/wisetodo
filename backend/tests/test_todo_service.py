@@ -1,0 +1,81 @@
+from pathlib import Path
+
+from alembic.config import Config
+
+from alembic import command
+from wisetodo.database import Database, create_database
+from wisetodo.todos import TodoChanges, TodoInput, TodoService
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+
+
+def create_service(tmp_path: Path) -> tuple[Database, TodoService]:
+    database_url = f"sqlite:///{(tmp_path / 'service.db').as_posix()}"
+    config = Config(BACKEND_DIR / "alembic.ini")
+    config.set_main_option("sqlalchemy.url", database_url)
+    command.upgrade(config, "head")
+    database = create_database(database_url)
+    return database, TodoService(database.sessions)
+
+
+def test_create_get_and_list_todos(tmp_path: Path) -> None:
+    database, service = create_service(tmp_path)
+    try:
+        created = service.create(
+            TodoInput(topic="Read a book", priority=1, items=["Chapter 1", "Chapter 2"])
+        )
+
+        fetched = service.get(created.id)
+        listed = service.list()
+
+        assert fetched == created
+        assert listed == [created]
+        assert [item.position for item in created.items] == [0, 1]
+        assert all(item.todo_id == created.id for item in created.items)
+    finally:
+        database.dispose()
+
+
+def test_update_replaces_changed_fields_and_items(tmp_path: Path) -> None:
+    database, service = create_service(tmp_path)
+    try:
+        created = service.create(
+            TodoInput(topic="Old topic", items=["Old item 1", "Old item 2"])
+        )
+
+        updated = service.update(
+            created.id,
+            TodoChanges(topic="New topic", priority=1, items=["New item 1", "New item 2"]),
+        )
+
+        assert updated is not None
+        assert updated.topic == "New topic"
+        assert updated.priority == 1
+        assert [item.topic for item in updated.items] == ["New item 1", "New item 2"]
+        assert {item.id for item in updated.items}.isdisjoint(
+            item.id for item in created.items
+        )
+    finally:
+        database.dispose()
+
+
+def test_delete_removes_todo_and_its_items(tmp_path: Path) -> None:
+    database, service = create_service(tmp_path)
+    try:
+        created = service.create(TodoInput(topic="Delete me", items=["One", "Two"]))
+
+        assert service.delete(created.id)
+        assert service.get(created.id) is None
+        assert service.list() == []
+        assert not service.delete(created.id)
+    finally:
+        database.dispose()
+
+
+def test_get_and_update_return_none_when_todo_is_missing(tmp_path: Path) -> None:
+    database, service = create_service(tmp_path)
+    try:
+        assert service.get("missing") is None
+        assert service.update("missing", TodoChanges(topic="New topic")) is None
+    finally:
+        database.dispose()

@@ -5,10 +5,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+Priority = Literal[0, 1]
+
 
 class TodoInput(BaseModel):
     topic: str = Field(min_length=1)
-    priority: Literal[0, 1] = 0
+    priority: Priority = 0
     items: list[str] = Field(min_length=2)
 
     @field_validator("topic")
@@ -30,7 +32,7 @@ class TodoInput(BaseModel):
 
 class TodoChanges(BaseModel):
     topic: str | None = None
-    priority: Literal[0, 1] | None = None
+    priority: Priority | None = None
     items: list[str] | None = Field(default=None, min_length=2)
 
 
@@ -45,7 +47,7 @@ class TodoItem(BaseModel):
 class Todo(BaseModel):
     id: str
     topic: str
-    priority: Literal[0, 1]
+    priority: Priority
     position: int
     created_at: datetime
     updated_at: datetime
