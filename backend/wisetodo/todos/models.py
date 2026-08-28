@@ -8,6 +8,13 @@ from pydantic import BaseModel, Field, field_validator
 Priority = Literal[0, 1]
 
 
+def normalize_item_topics(items: list[str]) -> list[str]:
+    normalized = [item.strip() for item in items]
+    if any(not item for item in normalized):
+        raise ValueError("todo items must not be blank")
+    return normalized
+
+
 class TodoInput(BaseModel):
     topic: str = Field(min_length=1)
     priority: Priority = 0
@@ -24,16 +31,18 @@ class TodoInput(BaseModel):
     @field_validator("items")
     @classmethod
     def items_must_not_be_blank(cls, items: list[str]) -> list[str]:
-        normalized = [item.strip() for item in items]
-        if any(not item for item in normalized):
-            raise ValueError("todo items must not be blank")
-        return normalized
+        return normalize_item_topics(items)
 
 
 class TodoChanges(BaseModel):
     topic: str | None = None
     priority: Priority | None = None
     items: list[str] | None = Field(default=None, min_length=2)
+
+    @field_validator("items")
+    @classmethod
+    def items_must_not_be_blank(cls, items: list[str] | None) -> list[str] | None:
+        return normalize_item_topics(items) if items is not None else None
 
 
 class TodoItem(BaseModel):
@@ -51,4 +60,4 @@ class Todo(BaseModel):
     position: int
     created_at: datetime
     updated_at: datetime
-    items: list[TodoItem]
+    items: list[TodoItem] = Field(min_length=2)
