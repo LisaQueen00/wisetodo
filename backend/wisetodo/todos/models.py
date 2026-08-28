@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -31,3 +32,21 @@ class TodoChanges(BaseModel):
     topic: str | None = None
     priority: Literal[0, 1] | None = None
     items: list[str] | None = Field(default=None, min_length=2)
+
+
+class TodoItem(BaseModel):
+    id: str
+    todo_id: str
+    topic: str
+    completed: bool
+    position: int
+
+
+class Todo(BaseModel):
+    id: str
+    topic: str
+    priority: Literal[0, 1]
+    position: int
+    created_at: datetime
+    updated_at: datetime
+    items: list[TodoItem]

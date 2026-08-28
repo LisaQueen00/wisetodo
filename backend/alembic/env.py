@@ -6,6 +6,7 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 from wisetodo.database import Base
+from wisetodo.todos import tables  # noqa: F401
 
 config = context.config
 
