@@ -6,7 +6,14 @@ from typing import cast
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
-from wisetodo.todos.models import Priority, Todo, TodoChanges, TodoInput, TodoItem
+from wisetodo.todos.models import (
+    Priority,
+    Todo,
+    TodoCaller,
+    TodoChanges,
+    TodoInput,
+    TodoItem,
+)
 from wisetodo.todos.tables import TodoItemRecord, TodoRecord
 
 
@@ -61,7 +68,10 @@ class TodoService:
             session.refresh(record)
             return self._to_domain(record)
 
-    def delete(self, todo_id: str) -> bool:
+    def delete(self, todo_id: str, *, caller: TodoCaller) -> bool:
+        if caller is not TodoCaller.USER:
+            raise PermissionError("Only user callers can delete top-level todos")
+
         with self._sessions.begin() as session:
             record = session.get(TodoRecord, todo_id)
             if record is None:

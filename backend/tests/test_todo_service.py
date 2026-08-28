@@ -1,10 +1,11 @@
 from pathlib import Path
 
+import pytest
 from alembic.config import Config
 
 from alembic import command
 from wisetodo.database import Database, create_database
-from wisetodo.todos import TodoChanges, TodoInput, TodoService
+from wisetodo.todos import TodoCaller, TodoChanges, TodoInput, TodoService
 from wisetodo.todos.tables import TodoRecord
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -67,10 +68,23 @@ def test_delete_removes_todo_and_its_items(tmp_path: Path) -> None:
     try:
         created = service.create(TodoInput(topic="Delete me", items=["One", "Two"]))
 
-        assert service.delete(created.id)
+        assert service.delete(created.id, caller=TodoCaller.USER)
         assert service.get(created.id) is None
         assert service.list() == []
-        assert not service.delete(created.id)
+        assert not service.delete(created.id, caller=TodoCaller.USER)
+    finally:
+        database.dispose()
+
+
+def test_agent_cannot_delete_top_level_todo(tmp_path: Path) -> None:
+    database, service = create_service(tmp_path)
+    try:
+        created = service.create(TodoInput(topic="Keep me", items=["One", "Two"]))
+
+        with pytest.raises(PermissionError, match="Only user callers can delete"):
+            service.delete(created.id, caller=TodoCaller.AGENT)
+
+        assert service.get(created.id) == created
     finally:
         database.dispose()
 

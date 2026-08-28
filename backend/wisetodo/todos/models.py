@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, Field, computed_field, field_validator
 
 Priority = Literal[0, 1]
+
+
+class TodoCaller(StrEnum):
+    USER = "user"
+    AGENT = "agent"
 
 
 def normalize_item_topics(items: list[str]) -> list[str]:
