@@ -28,14 +28,34 @@ def make_todo(completion_states: list[bool]) -> Todo:
     )
 
 
-def test_todo_requires_at_least_two_items() -> None:
+@pytest.mark.parametrize("items", [[], ["Chapter 1"]])
+def test_todo_requires_at_least_two_items(items: list[str]) -> None:
     with pytest.raises(ValidationError):
-        TodoInput(topic="Read a book", items=["Chapter 1"])
+        TodoInput(topic="Read a book", items=items)
 
 
-def test_todo_update_requires_at_least_two_items() -> None:
+@pytest.mark.parametrize("items", [[], ["Chapter 1"]])
+def test_todo_update_requires_at_least_two_items(items: list[str]) -> None:
     with pytest.raises(ValidationError):
-        TodoChanges(items=["Chapter 1"])
+        TodoChanges(items=items)
+
+
+@pytest.mark.parametrize("model", [TodoInput, TodoChanges])
+@pytest.mark.parametrize("items", [["One", ""], ["  \t", "Two"]])
+def test_blank_items_are_rejected(
+    model: type[TodoInput] | type[TodoChanges], items: list[str]
+) -> None:
+    with pytest.raises(ValidationError):
+        model(topic="Task", items=items)
+
+
+@pytest.mark.parametrize("model", [TodoInput, TodoChanges])
+@pytest.mark.parametrize("priority", [-1, 2])
+def test_invalid_priority_is_rejected(
+    model: type[TodoInput] | type[TodoChanges], priority: int
+) -> None:
+    with pytest.raises(ValidationError):
+        model.model_validate({"topic": "Task", "items": ["One", "Two"], "priority": priority})
 
 
 def test_todo_domain_requires_at_least_two_items() -> None:
