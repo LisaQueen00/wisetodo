@@ -1,9 +1,12 @@
-import { useId } from "react";
+import { useId, useState } from "react";
+import { TodoCard } from "./TodoCard";
 import type { Todo } from "./types";
 
-function TodoSection({ title, todos }: {
+function TodoSection({ title, todos, expandedIds, onToggle }: {
   title: "未完成" | "已完成";
   todos: readonly Todo[];
+  expandedIds: ReadonlySet<string>;
+  onToggle: (todoId: string) => void;
 }) {
   const headingId = useId();
   if (todos.length === 0) return null;
@@ -18,27 +21,12 @@ function TodoSection({ title, todos }: {
       </header>
       <ul aria-label={`${title} Todo`} className="space-y-3">
         {todos.map((todo) => (
-          <li key={todo.id} className="rounded-2xl border border-white/10 bg-[var(--surface-todo)] p-4">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="min-w-0 flex-1 whitespace-pre-wrap break-words font-medium [overflow-wrap:anywhere]">
-                {todo.topic}
-              </h3>
-              <span className="shrink-0 rounded-md bg-white/5 px-2 py-1 text-xs text-white/55">
-                {todo.priority === 1 ? "高优先级" : "普通"}
-              </span>
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              <progress
-                aria-label={`${todo.topic}的进度`}
-                value={todo.progress}
-                max={1}
-                className="h-1.5 min-w-0 flex-1"
-              />
-              <span className="shrink-0 text-xs tabular-nums text-white/50">
-                {Math.round(todo.progress * 100)}% · {todo.items.length} 个子项
-              </span>
-            </div>
-          </li>
+          <TodoCard
+            key={todo.id}
+            todo={todo}
+            expanded={expandedIds.has(todo.id)}
+            onToggle={onToggle}
+          />
         ))}
       </ul>
     </section>
@@ -46,14 +34,25 @@ function TodoSection({ title, todos }: {
 }
 
 export function TodoList({ todos }: { todos: readonly Todo[] }) {
+  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  function toggleTodo(todoId: string) {
+    setExpandedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(todoId)) next.delete(todoId);
+      else next.add(todoId);
+      return next;
+    });
+  }
+
   // Stable partition: the Service already supplies priority/position order.
   const incomplete = todos.filter((todo) => !todo.completed);
   const completed = todos.filter((todo) => todo.completed);
 
   return (
     <div className="space-y-7">
-      <TodoSection title="未完成" todos={incomplete} />
-      <TodoSection title="已完成" todos={completed} />
+      <TodoSection title="未完成" todos={incomplete} expandedIds={expandedIds} onToggle={toggleTodo} />
+      <TodoSection title="已完成" todos={completed} expandedIds={expandedIds} onToggle={toggleTodo} />
     </div>
   );
 }
