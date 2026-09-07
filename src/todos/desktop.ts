@@ -51,6 +51,13 @@ function savedTodo(result: unknown): Todo {
 }
 
 export const desktopMutations: TodoMutations = {
+  async move(todoId, targetId) {
+    const result = await invoke<unknown>("todos_move", { todoId, targetId });
+    if (!isObject(result) || !Array.isArray(result.todos) || !result.todos.every(isTodo)) {
+      throw new Error("Invalid todos_move response");
+    }
+    return result.todos;
+  },
   async setItemCompleted(todoId, itemId, completed) {
     return savedTodo(await invoke("todos_set_item_completed", { todoId, itemId, completed }));
   },

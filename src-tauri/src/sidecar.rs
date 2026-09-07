@@ -44,6 +44,10 @@ impl TodoBackend {
         self.call("user.todos.set_item_completed", json!({"todo_id": todo_id, "item_id": item_id, "completed": completed}))
     }
 
+    pub fn move_todo(&self, todo_id: String, target_id: String) -> Result<Value, String> {
+        self.call("user.todos.move", json!({"todo_id": todo_id, "target_id": target_id}))
+    }
+
     pub fn delete(&self, todo_id: String) -> Result<Value, String> {
         self.call("user.todos.delete", json!({"todo_id": todo_id}))
     }
@@ -288,6 +292,9 @@ finally:
 
         let created = backend.create(json!({"topic":"写入测试", "items":["子项一", "子项二"]})).unwrap();
         let id = created["todo"]["id"].as_str().unwrap().to_owned();
+        let reordered = backend.move_todo(id.clone(), id.clone()).unwrap();
+        assert_eq!(reordered, backend.list().unwrap());
+        assert_eq!(reordered["todos"].as_array().unwrap().len(), 3);
         let item_id = created["todo"]["items"][0]["id"].as_str().unwrap().to_owned();
         let checked = backend.set_item_completed(id.clone(), item_id.clone(), true).unwrap();
         assert_eq!(checked["todo"]["progress"], json!(0.5));

@@ -12,6 +12,7 @@ async function setup() {
   const [original] = await loadPreviewTodos();
   let stored = original;
   const mutations: TodoMutations = {
+    move: vi.fn(),
     create: vi.fn(), update: vi.fn(), delete: vi.fn(),
     setItemCompleted: vi.fn(async (_todoId, itemId, completed) => {
       const items = stored.items.map((item) => item.id === itemId ? { ...item, completed } : item);

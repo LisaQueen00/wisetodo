@@ -8,6 +8,14 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 beforeEach(() => vi.resetAllMocks());
 
 describe("loadDesktopTodos", () => {
+  it("uses the fixed move command and rejects invalid sorted lists", async () => {
+    const todos = await loadPreviewTodos();
+    vi.mocked(invoke).mockResolvedValue({ todos });
+    expect(await desktopMutations.move("source", "target")).toEqual(todos);
+    expect(invoke).toHaveBeenLastCalledWith("todos_move", { todoId: "source", targetId: "target" });
+    vi.mocked(invoke).mockResolvedValue({ todos: [{}] });
+    await expect(desktopMutations.move("source", "target")).rejects.toThrow();
+  });
   it("sends exact child IDs and validates completion responses", async () => {
     const [todo] = await loadPreviewTodos();
     vi.mocked(invoke).mockResolvedValue({ todo });

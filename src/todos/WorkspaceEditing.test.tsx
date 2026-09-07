@@ -24,6 +24,7 @@ it("creates, edits child rows, updates the visible list and retries a failed del
     update: vi.fn(async (_id, draft) => persist(draft)),
     delete: vi.fn(async () => undefined),
     setItemCompleted: vi.fn(),
+    move: vi.fn(),
   };
   render(<App loadTodos={async () => []} mutations={mutations} />);
   fireEvent.click(await screen.findByRole("button", { name: "新增 Todo" }));

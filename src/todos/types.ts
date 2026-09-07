@@ -26,6 +26,7 @@ export interface TodoDraft {
 }
 
 export interface TodoMutations {
+  move: (todoId: string, targetId: string) => Promise<Todo[]>;
   setItemCompleted: (todoId: string, itemId: string, completed: boolean) => Promise<Todo>;
   create: (draft: TodoDraft) => Promise<Todo>;
   update: (todoId: string, draft: TodoDraft) => Promise<Todo>;
@@ -33,6 +34,7 @@ export interface TodoMutations {
 }
 
 export interface TodoActions {
+  busy?: boolean;
   mutations: TodoMutations;
   onSaved: (todo: Todo) => void;
   onDeleted: (todoId: string) => void;

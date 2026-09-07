@@ -3,7 +3,7 @@ import { useId, useState } from "react";
 import { TodoEditor } from "./TodoEditor";
 import type { Todo, TodoActions } from "./types";
 
-export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocked, onEdit }: {
+export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocked, onEdit, reorder }: {
   todo: Todo;
   expanded: boolean;
   onToggle: (todoId: string) => void;
@@ -11,6 +11,12 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
   editing: boolean;
   editLocked: boolean;
   onEdit: (todoId: string | null) => void;
+  reorder?: {
+    previous?: string; next?: string; locked: boolean;
+    start: (id: string) => void; end: () => void;
+    canDrop: (todo: Todo) => boolean; drop: (todo: Todo) => void;
+    move: (id: string, targetId: string) => void;
+  };
 }) {
   const panelId = useId();
   const [deleting, setDeleting] = useState(false);
@@ -46,7 +52,12 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
   );
 
   return (
-    <li className="rounded-2xl border border-white/10 bg-[var(--surface-todo)] p-4">
+    <li className="rounded-2xl border border-white/10 bg-[var(--surface-todo)] p-4"
+      onDragOver={(event) => {
+        if (reorder?.canDrop(todo)) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }
+      }}
+      onDrop={(event) => { if (reorder?.canDrop(todo)) { event.preventDefault(); reorder.drop(todo); } }}
+    >
       <div className="flex items-start justify-between gap-3">
         <h3 className="min-w-0 flex-1 font-medium">
           <button
@@ -88,6 +99,24 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
             {deleting ? "正在删除…" : "删除 Todo"}
           </button>
           {error && <p role="alert">删除失败，请重试。</p>}
+        </div>
+      )}
+      {reorder && (
+        <div className="mt-3 flex gap-3 text-xs text-white/60">
+          <button type="button" draggable={!editLocked && !deleting && !savingItem && !reorder.locked}
+            disabled={editLocked || deleting || savingItem || reorder.locked}
+            aria-label={`拖动排序 ${todo.topic}`} className="cursor-grab disabled:opacity-30"
+            onDragStart={(event) => {
+              event.dataTransfer.setData("text/plain", todo.id);
+              event.dataTransfer.effectAllowed = "move";
+              reorder.start(todo.id);
+            }} onDragEnd={reorder.end}>排序</button>
+          <button type="button" aria-label={`上移 ${todo.topic}`} className="disabled:opacity-30"
+            disabled={editLocked || deleting || savingItem || reorder.locked || !reorder.previous}
+            onClick={() => { if (reorder.previous) reorder.move(todo.id, reorder.previous); }}>上移</button>
+          <button type="button" aria-label={`下移 ${todo.topic}`} className="disabled:opacity-30"
+            disabled={editLocked || deleting || savingItem || reorder.locked || !reorder.next}
+            onClick={() => { if (reorder.next) reorder.move(todo.id, reorder.next); }}>下移</button>
         </div>
       )}
       {savingItem && <p role="status" className="mt-2 text-xs text-white/50">正在保存完成状态…</p>}

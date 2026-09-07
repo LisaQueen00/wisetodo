@@ -1,8 +1,17 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { TodoCard } from "./TodoCard";
 import type { Todo, TodoActions } from "./types";
 
-function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, onEdit }: {
+interface Sorting {
+  start: (id: string) => void;
+  end: () => void;
+  canDrop: (todo: Todo) => boolean;
+  drop: (todo: Todo) => void;
+  move: (id: string, targetId: string) => void;
+  locked: boolean;
+}
+
+function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, onEdit, sorting }: {
   title: "未完成" | "已完成";
   todos: readonly Todo[];
   expandedIds: ReadonlySet<string>;
@@ -10,6 +19,7 @@ function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, 
   actions?: TodoActions;
   editingId: string | null;
   onEdit: (todoId: string | null) => void;
+  sorting: Sorting;
 }) {
   const headingId = useId();
   if (todos.length === 0) return null;
@@ -23,7 +33,7 @@ function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, 
         </span>
       </header>
       <ul aria-label={`${title} Todo`} className="space-y-3">
-        {todos.map((todo) => (
+        {todos.map((todo, index) => (
           <TodoCard
             key={todo.id}
             todo={todo}
@@ -31,8 +41,13 @@ function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, 
             onToggle={onToggle}
             actions={actions}
             editing={editingId === todo.id}
-            editLocked={editingId !== null}
+            editLocked={editingId !== null || !!actions?.busy || sorting.locked}
             onEdit={onEdit}
+            reorder={actions ? {
+              ...sorting,
+              previous: todos[index - 1]?.priority === todo.priority ? todos[index - 1].id : undefined,
+              next: todos[index + 1]?.priority === todo.priority ? todos[index + 1].id : undefined,
+            } : undefined}
           />
         ))}
       </ul>
@@ -43,6 +58,36 @@ function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, 
 export function TodoList({ todos, actions }: { todos: readonly Todo[]; actions?: TodoActions }) {
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const dragged = useRef<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(false);
+  const locked = saving || !!actions?.busy || editingId !== null;
+  const canDrop = (target: Todo) => {
+    const source = todos.find((todo) => todo.id === dragged.current);
+    return !locked && !!source && source.id !== target.id
+      && source.priority === target.priority && source.completed === target.completed;
+  };
+  async function move(id: string, targetId: string) {
+    if (!actions || locked || id === targetId) return;
+    setSaving(true);
+    setError(false);
+    try { await actions.mutations.move(id, targetId); }
+    catch { setError(true); }
+    finally { setSaving(false); }
+  }
+  const sorting: Sorting = {
+    locked,
+    start: (id) => { dragged.current = id; setDragging(true); },
+    end: () => { dragged.current = null; setDragging(false); },
+    canDrop,
+    drop: (target) => {
+      if (canDrop(target) && dragged.current) void move(dragged.current, target.id);
+      dragged.current = null;
+      setDragging(false);
+    },
+    move: (id, targetId) => { void move(id, targetId); },
+  };
 
   function toggleTodo(todoId: string) {
     setExpandedIds((previous) => {
@@ -59,10 +104,14 @@ export function TodoList({ todos, actions }: { todos: readonly Todo[]; actions?:
 
   return (
     <div className="space-y-7">
+      {actions && <p className="text-xs text-white/45">拖动“排序”到同状态、同优先级的任务上，或使用上移 / 下移。</p>}
+      {dragging && <p role="status">松开后移动到目标位置；不能跨完成状态或优先级。</p>}
+      {saving && <p role="status">正在保存排序…</p>}
+      {error && <p role="alert">排序保存失败，列表未更改，请重试。</p>}
       <TodoSection title="未完成" todos={incomplete} expandedIds={expandedIds} onToggle={toggleTodo}
-        actions={actions} editingId={editingId} onEdit={setEditingId} />
+        actions={actions} editingId={editingId} onEdit={setEditingId} sorting={sorting} />
       <TodoSection title="已完成" todos={completed} expandedIds={expandedIds} onToggle={toggleTodo}
-        actions={actions} editingId={editingId} onEdit={setEditingId} />
+        actions={actions} editingId={editingId} onEdit={setEditingId} sorting={sorting} />
     </div>
   );
 }

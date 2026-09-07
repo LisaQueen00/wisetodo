@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TodoList } from "./TodoList";
 import { TodoEditor } from "./TodoEditor";
 import type { LoadTodos, Todo, TodoMutations } from "./types";
@@ -11,6 +11,36 @@ export function TodoWorkspace({ loadTodos, mutations }: { loadTodos: LoadTodos; 
   const [state, setState] = useState<State | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [creating, setCreating] = useState(false);
+  const pending = useRef(0);
+  const sorting = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const guardedMutations = useMemo<TodoMutations | undefined>(() => {
+    if (!mutations) return undefined;
+    async function write<T>(operation: () => Promise<T>, reorder = false): Promise<T> {
+      if (sorting.current || (reorder && pending.current > 0)) throw new Error("Write in progress");
+      pending.current++;
+      sorting.current = reorder;
+      setBusy(true);
+      try { return await operation(); }
+      finally {
+        pending.current--;
+        if (reorder) sorting.current = false;
+        setBusy(pending.current > 0);
+      }
+    }
+    return {
+      create: (draft) => write(() => mutations.create(draft)),
+      update: (id, draft) => write(() => mutations.update(id, draft)),
+      delete: (id) => write(() => mutations.delete(id)),
+      setItemCompleted: (id, itemId, completed) => write(() => mutations.setItemCompleted(id, itemId, completed)),
+      move: (id, targetId) => write(async () => {
+        const todos = await mutations.move(id, targetId);
+        setState((previous) => previous?.status === "ready" && previous.source === loadTodos
+          ? { ...previous, todos } : previous);
+        return todos;
+      }, true),
+    };
+  }, [mutations, loadTodos]);
   const onSaved = useCallback((todo: Todo) => {
     setState((previous) => {
       if (!previous || previous.status !== "ready" || previous.source !== loadTodos) return previous;
@@ -24,8 +54,9 @@ export function TodoWorkspace({ loadTodos, mutations }: { loadTodos: LoadTodos; 
     setState((previous) => previous?.status === "ready" && previous.source === loadTodos
       ? { ...previous, todos: previous.todos.filter((todo) => todo.id !== id) } : previous);
   }, [loadTodos]);
-  const actions = useMemo(() => mutations ? { mutations, onSaved, onDeleted } : undefined,
-    [mutations, onSaved, onDeleted]);
+  const actions = useMemo(() => mutations
+    ? { mutations: guardedMutations!, onSaved, onDeleted, busy: busy || creating } : undefined,
+    [mutations, guardedMutations, onSaved, onDeleted, busy, creating]);
   useEffect(() => {
     let active = true;
     Promise.resolve().then(loadTodos).then(
@@ -52,9 +83,9 @@ export function TodoWorkspace({ loadTodos, mutations }: { loadTodos: LoadTodos; 
         <div className="mb-4">
           {creating ? (
             <div className="rounded-xl border border-white/15 p-4">
-              <TodoEditor mutations={mutations} onSaved={onSaved} onClose={() => setCreating(false)} />
+              <TodoEditor mutations={guardedMutations!} onSaved={onSaved} onClose={() => setCreating(false)} />
             </div>
-          ) : <button className="rounded-md bg-white/10 px-3 py-2 text-sm" onClick={() => setCreating(true)}>新增 Todo</button>}
+          ) : <button disabled={busy} className="rounded-md bg-white/10 px-3 py-2 text-sm disabled:opacity-30" onClick={() => setCreating(true)}>新增 Todo</button>}
         </div>
       )}
       <p role="status" className="mb-4 text-xs text-white/45">共 {state.todos.length} 个 Todo</p>

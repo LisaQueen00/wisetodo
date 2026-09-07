@@ -32,6 +32,7 @@ async def dispatch(request: IpcRequest, todo_service: TodoService | None = None)
         "user.todos.update",
         "user.todos.delete",
         "user.todos.set_item_completed",
+        "user.todos.move",
     }:
         if todo_service is None:
             raise RuntimeError("Todo service is not initialized")
@@ -41,6 +42,15 @@ async def dispatch(request: IpcRequest, todo_service: TodoService | None = None)
         todo_id = request.params.get("todo_id")
         if not isinstance(todo_id, str) or not todo_id:
             raise ValueError("Missing Todo ID")
+        if request.method == "user.todos.move":
+            target_id = request.params.get("target_id")
+            if not isinstance(target_id, str) or not target_id:
+                raise ValueError("Missing target ID")
+            return {
+                "todos": [
+                    todo.model_dump(mode="json") for todo in todo_service.move(todo_id, target_id)
+                ]
+            }
         if request.method == "user.todos.delete":
             return {"deleted": todo_service.delete(todo_id, caller=TodoCaller.USER)}
         if request.method == "user.todos.set_item_completed":
@@ -109,7 +119,9 @@ async def run_stdio_server(todo_service: TodoService | None = None) -> None:
                 code=ErrorCode.TODO_VALIDATION_FAILED,
                 message="Invalid Todo data",
                 user_message=(
-                    "子项 ID 或完成状态无效，请重新读取列表后重试。"
+                    "只能在相同完成状态、相同优先级内排序，请重新读取列表后重试。"
+                    if message.method == "user.todos.move"
+                    else "子项 ID 或完成状态无效，请重新读取列表后重试。"
                     if message.method == "user.todos.set_item_completed"
                     else "标题和子项不能为空，且至少保留两个子项。请检查输入后重试。"
                 ),

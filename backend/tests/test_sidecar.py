@@ -168,6 +168,32 @@ def test_sidecar_initialization_failure_exits_without_protocol_output(tmp_path: 
     assert str(tmp_path) not in result.stderr
 
 
+def test_sidecar_sorting_survives_restart_and_validates_targets(tmp_path: Path) -> None:
+    path = tmp_path / "order.db"
+    database = initialize_database(path)
+    try:
+        service = TodoService(database.sessions)
+        for name in "AB":
+            service.create(TodoInput(topic=name, items=["One", "Two"]))
+        a, b = service.list()
+    finally:
+        database.dispose()
+    move = request("move", "user.todos.move")
+    move["params"] = {"todo_id": b.id, "target_id": a.id}
+    invalid = request("invalid", "user.todos.move")
+    invalid["params"] = {"todo_id": b.id, "target_id": 123}
+    missing = request("missing", "user.todos.move")
+    missing["params"] = {"todo_id": b.id, "target_id": "missing"}
+    result = run_sidecar(path, [move, invalid, missing], tmp_path)
+    assert result.returncode == 0, result.stderr
+    moved, invalid_response, missing_response = map(json.loads, result.stdout.splitlines())
+    assert [todo["id"] for todo in moved["result"]["todos"]] == [b.id, a.id]
+    assert invalid_response["error"]["code"] == "TODO_VALIDATION_FAILED"
+    assert missing_response["error"]["code"] == "TODO_NOT_FOUND"
+    restarted = run_sidecar(path, [request("read", "todos.list")], tmp_path)
+    assert json.loads(restarted.stdout)["result"] == moved["result"]
+
+
 def test_sidecar_completion_persists_and_rejects_non_boolean_values(tmp_path: Path) -> None:
     path = tmp_path / "completion.db"
     database = initialize_database(path)

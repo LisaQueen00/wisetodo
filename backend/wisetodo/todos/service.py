@@ -20,6 +20,7 @@ from wisetodo.todos.models import (
 from wisetodo.todos.tables import TodoItemRecord, TodoRecord
 
 TodoItemRecordList = list[TodoItemRecord]
+TodoList = list[Todo]
 
 
 class TodoService:
@@ -103,6 +104,32 @@ class TodoService:
             session.flush()
             session.refresh(record)
             return self._to_domain(record)
+
+    def move(self, todo_id: str, target_id: str) -> TodoList:
+        """Move to the target's slot within the same completion/priority group."""
+        with self._sessions.begin() as session:
+            records = sorted(session.scalars(self._record_query()).all(), key=self._sort_key)
+            by_id = {record.id: record for record in records}
+            source, target = by_id.get(todo_id), by_id.get(target_id)
+            if source is None or target is None:
+                raise LookupError("Todo not found")
+            group_key = self._sort_key(source)[:2]
+            if group_key != self._sort_key(target)[:2]:
+                raise ValueError("Cannot move across completion or priority groups")
+            if source is not target:
+                group = [record for record in records if self._sort_key(record)[:2] == group_key]
+                target_index = group.index(target)
+                group.remove(source)
+                group.insert(target_index, source)
+                now = datetime.now(UTC)
+                for position, record in enumerate(group):
+                    if record.position != position:
+                        record.position = position
+                        record.updated_at = now
+                session.flush()
+                for record in group:
+                    session.refresh(record)
+            return [self._to_domain(record) for record in sorted(records, key=self._sort_key)]
 
     def delete(self, todo_id: str, *, caller: TodoCaller) -> bool:
         if caller is not TodoCaller.USER:
