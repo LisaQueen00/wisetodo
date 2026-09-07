@@ -32,3 +32,20 @@ input,
 textarea {
   font: inherit;
 }
+
+progress {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #ffffff14;
+}
+
+progress::-webkit-progress-bar { background: #ffffff14; }
+progress::-webkit-progress-value { background: var(--priority-normal); }
+progress::-moz-progress-bar { background: var(--priority-normal); }
+
+:focus-visible {
+  outline: 2px solid var(--priority-normal);
+  outline-offset: 3px;
+}
