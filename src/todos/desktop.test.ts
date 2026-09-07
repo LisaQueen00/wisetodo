@@ -8,6 +8,16 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 beforeEach(() => vi.resetAllMocks());
 
 describe("loadDesktopTodos", () => {
+  it("sends exact child IDs and validates completion responses", async () => {
+    const [todo] = await loadPreviewTodos();
+    vi.mocked(invoke).mockResolvedValue({ todo });
+    expect(await desktopMutations.setItemCompleted(todo.id, todo.items[0].id, true)).toEqual(todo);
+    expect(invoke).toHaveBeenLastCalledWith("todos_set_item_completed", {
+      todoId: todo.id, itemId: todo.items[0].id, completed: true,
+    });
+    vi.mocked(invoke).mockResolvedValue({ todo: {} });
+    await expect(desktopMutations.setItemCompleted(todo.id, todo.items[0].id, false)).rejects.toThrow();
+  });
   it("uses fixed user mutation commands and sends IDs only on updates", async () => {
     const [todo] = await loadPreviewTodos();
     const draft = { topic: todo.topic, priority: todo.priority,

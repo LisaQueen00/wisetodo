@@ -51,6 +51,9 @@ function savedTodo(result: unknown): Todo {
 }
 
 export const desktopMutations: TodoMutations = {
+  async setItemCompleted(todoId, itemId, completed) {
+    return savedTodo(await invoke("todos_set_item_completed", { todoId, itemId, completed }));
+  },
   async create(draft) {
     return savedTodo(await invoke("todos_create", {
       todo: { ...draft, items: draft.items.map((item) => item.topic) },

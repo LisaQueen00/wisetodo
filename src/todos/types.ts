@@ -26,6 +26,7 @@ export interface TodoDraft {
 }
 
 export interface TodoMutations {
+  setItemCompleted: (todoId: string, itemId: string, completed: boolean) => Promise<Todo>;
   create: (draft: TodoDraft) => Promise<Todo>;
   update: (todoId: string, draft: TodoDraft) => Promise<Todo>;
   delete: (todoId: string) => Promise<void>;

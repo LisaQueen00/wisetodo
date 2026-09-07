@@ -168,6 +168,29 @@ def test_sidecar_initialization_failure_exits_without_protocol_output(tmp_path: 
     assert str(tmp_path) not in result.stderr
 
 
+def test_sidecar_completion_persists_and_rejects_non_boolean_values(tmp_path: Path) -> None:
+    path = tmp_path / "completion.db"
+    database = initialize_database(path)
+    try:
+        todo = TodoService(database.sessions).create(TodoInput(topic="Book", items=["One", "Two"]))
+    finally:
+        database.dispose()
+    requests = []
+    for index, completed in enumerate([True, "false", 0, None, False, True]):
+        change = request(str(index), "user.todos.set_item_completed")
+        change["params"] = {"todo_id": todo.id, "item_id": todo.items[0].id, "completed": completed}
+        requests.append(change)
+    result = run_sidecar(path, requests, tmp_path)
+    assert result.returncode == 0, result.stderr
+    responses = list(map(json.loads, result.stdout.splitlines()))
+    assert responses[0]["result"]["todo"]["progress"] == 0.5
+    for response in responses[1:4]:
+        assert response["error"]["code"] == "TODO_VALIDATION_FAILED"
+    assert responses[4]["result"]["todo"]["progress"] == 0
+    restarted = run_sidecar(path, [request("read", "todos.list")], tmp_path)
+    assert json.loads(restarted.stdout)["result"]["todos"] == [responses[5]["result"]["todo"]]
+
+
 def test_sidecar_manual_create_update_delete_and_invalid_update(tmp_path: Path) -> None:
     path = tmp_path / "writes.db"
     create = request("create", "user.todos.create")

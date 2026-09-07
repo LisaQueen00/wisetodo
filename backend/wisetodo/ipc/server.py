@@ -27,7 +27,12 @@ async def dispatch(request: IpcRequest, todo_service: TodoService | None = None)
         if todo_service is None:
             raise RuntimeError("Todo service is not initialized")
         return {"todos": [todo.model_dump(mode="json") for todo in todo_service.list()]}
-    if request.method in {"user.todos.create", "user.todos.update", "user.todos.delete"}:
+    if request.method in {
+        "user.todos.create",
+        "user.todos.update",
+        "user.todos.delete",
+        "user.todos.set_item_completed",
+    }:
         if todo_service is None:
             raise RuntimeError("Todo service is not initialized")
         if request.method == "user.todos.create":
@@ -38,7 +43,16 @@ async def dispatch(request: IpcRequest, todo_service: TodoService | None = None)
             raise ValueError("Missing Todo ID")
         if request.method == "user.todos.delete":
             return {"deleted": todo_service.delete(todo_id, caller=TodoCaller.USER)}
-        updated = todo_service.update(todo_id, TodoEdit.model_validate(request.params.get("todo")))
+        if request.method == "user.todos.set_item_completed":
+            item_id = request.params.get("item_id")
+            completed = request.params.get("completed")
+            if not isinstance(item_id, str) or not item_id or not isinstance(completed, bool):
+                raise ValueError("Expected an item ID and boolean completion")
+            updated = todo_service.set_item_completed(todo_id, item_id, completed)
+        else:
+            updated = todo_service.update(
+                todo_id, TodoEdit.model_validate(request.params.get("todo"))
+            )
         if updated is None:
             raise LookupError("Todo not found")
         return {"todo": updated.model_dump(mode="json")}
@@ -94,13 +108,17 @@ async def run_stdio_server(todo_service: TodoService | None = None) -> None:
             error = WiseTodoError(
                 code=ErrorCode.TODO_VALIDATION_FAILED,
                 message="Invalid Todo data",
-                user_message="标题和子项不能为空，且至少保留两个子项。请检查输入后重试。",
+                user_message=(
+                    "子项 ID 或完成状态无效，请重新读取列表后重试。"
+                    if message.method == "user.todos.set_item_completed"
+                    else "标题和子项不能为空，且至少保留两个子项。请检查输入后重试。"
+                ),
             )
         except LookupError:
             error = WiseTodoError(
                 code=ErrorCode.TODO_NOT_FOUND,
                 message="Todo not found",
-                user_message="此 Todo 已不存在，请重新读取列表。",
+                user_message="此 Todo 或子项已不存在，请重新读取列表。",
             )
         except SQLAlchemyError:
             error = WiseTodoError(

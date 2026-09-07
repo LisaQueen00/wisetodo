@@ -86,7 +86,9 @@ describe("TodoList expansion", () => {
     const items = within(list).getAllByRole("listitem");
     expect(items.map((item) => item.textContent))
       .toEqual(["Run tests", "Read the implementation", "Run tests"]);
-    expect(within(list).queryByRole("checkbox")).not.toBeInTheDocument();
+    for (const checkbox of within(list).getAllByRole("checkbox")) {
+      expect(checkbox).toBeDisabled();
+    }
     expect(within(list).queryByRole("button")).not.toBeInTheDocument();
     fireEvent.click(within(items[1]).getByText("Read the implementation"));
     expect(button).toHaveAttribute("aria-expanded", "true");

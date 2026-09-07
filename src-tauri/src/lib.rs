@@ -49,6 +49,18 @@ fn health() -> &'static str {
     "ok"
 }
 
+#[tauri::command]
+async fn todos_set_item_completed(
+    backend: tauri::State<'_, Arc<sidecar::TodoBackend>>,
+    todo_id: String,
+    item_id: String,
+    completed: bool,
+) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.set_item_completed(todo_id, item_id, completed))
+        .await.map_err(|_| "子项保存任务异常终止".to_owned())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -66,7 +78,7 @@ pub fn run() {
             app.manage(Arc::new(sidecar::TodoBackend::new(database_path)));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![health, todos_list, todos_create, todos_update, todos_delete])
+        .invoke_handler(tauri::generate_handler![health, todos_list, todos_create, todos_update, todos_delete, todos_set_item_completed])
         .build(tauri::generate_context!())
         .expect("error while building WiseTodo")
         .run(|app, event| {

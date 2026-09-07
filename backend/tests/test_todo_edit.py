@@ -53,6 +53,35 @@ def test_manual_edit_targets_exact_duplicate_and_resets_renamed_item(
         assert session.get(TodoItemRecord, original.items[0].id) is None
 
 
+def test_completion_targets_exact_item_and_persists(service: tuple[Database, TodoService]) -> None:
+    _, todos = service
+    original = todos.create(TodoInput(topic="Book", items=["Same", "Same"]))
+    updated = todos.set_item_completed(original.id, original.items[1].id, True)
+    assert updated is not None
+    assert [item.completed for item in updated.items] == [False, True]
+    assert updated.progress == 0.5
+    assert not updated.completed
+    assert todos.get(original.id) == updated
+    assert todos.set_item_completed(original.id, original.items[1].id, True) == updated
+    finished = todos.set_item_completed(original.id, original.items[0].id, True)
+    assert finished is not None and finished.completed and finished.progress == 1
+    reopened = todos.set_item_completed(original.id, original.items[1].id, False)
+    assert reopened is not None and not reopened.completed and reopened.progress == 0.5
+    assert [item.id for item in reopened.items] == [item.id for item in original.items]
+
+
+def test_completion_rejects_foreign_or_missing_item(service: tuple[Database, TodoService]) -> None:
+    _, todos = service
+    first = todos.create(TodoInput(topic="First", items=["One", "Two"]))
+    second = todos.create(TodoInput(topic="Second", items=["One", "Two"]))
+    for item_id in [second.items[0].id, "missing"]:
+        with pytest.raises(LookupError):
+            todos.set_item_completed(first.id, item_id, True)
+    assert todos.set_item_completed("missing", first.items[0].id, True) is None
+    assert todos.get(first.id) == first
+    assert todos.get(second.id) == second
+
+
 def test_foreign_item_id_rolls_back_all_changes(service: tuple[Database, TodoService]) -> None:
     _, todos = service
     first = todos.create(TodoInput(topic="First", items=["One", "Two"]))

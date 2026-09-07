@@ -22,6 +22,7 @@ async function setup(todo?: Todo) {
     create: vi.fn(async (draft) => savedTodo(base, draft)),
     update: vi.fn(async (_id, draft) => savedTodo(todo ?? base, draft)),
     delete: vi.fn(async () => undefined),
+    setItemCompleted: vi.fn(),
   };
   const onSaved = vi.fn();
   const onClose = vi.fn();

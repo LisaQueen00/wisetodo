@@ -87,6 +87,23 @@ class TodoService:
             session.refresh(record)
             return self._to_domain(record)
 
+    def set_item_completed(self, todo_id: str, item_id: str, completed: bool) -> Todo | None:
+        if not isinstance(completed, bool):
+            raise ValueError("Completion must be a boolean")
+        with self._sessions.begin() as session:
+            record = session.scalar(self._record_query().where(TodoRecord.id == todo_id))
+            if record is None:
+                return None
+            item = next((item for item in record.items if item.id == item_id), None)
+            if item is None:
+                raise LookupError("Todo item not found")
+            if item.completed != completed:
+                item.completed = completed
+                record.updated_at = datetime.now(UTC)
+            session.flush()
+            session.refresh(record)
+            return self._to_domain(record)
+
     def delete(self, todo_id: str, *, caller: TodoCaller) -> bool:
         if caller is not TodoCaller.USER:
             raise PermissionError("Only user callers can delete top-level todos")
