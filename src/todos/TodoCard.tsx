@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import { useId, useState } from "react";
 import { TodoEditor } from "./TodoEditor";
 import type { Todo, TodoActions } from "./types";
@@ -46,13 +46,15 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
   }
 
   if (editing && actions) return (
-    <li className="rounded-2xl border border-white/20 bg-[var(--surface-todo)] p-4">
+    <li className="todo-card rounded-2xl border p-4" data-priority={todo.priority}
+      data-completed={todo.completed} data-editing="true">
       <TodoEditor todo={todo} mutations={actions.mutations} onSaved={actions.onSaved} onClose={() => onEdit(null)} />
     </li>
   );
 
   return (
-    <li className="rounded-2xl border border-white/10 bg-[var(--surface-todo)] p-4"
+    <li className="todo-card rounded-2xl border p-4" data-priority={todo.priority}
+      data-completed={todo.completed}
       onDragOver={(event) => {
         if (reorder?.canDrop(todo)) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }
       }}
@@ -72,14 +74,19 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
               focusable="false"
               className={`mt-1 size-4 shrink-0 text-white/50 transition-transform motion-reduce:transition-none ${expanded ? "rotate-90" : ""}`}
             />
-            <span className="min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+            <span className="todo-title min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
               {todo.topic}
             </span>
           </button>
         </h3>
-        <span className="shrink-0 rounded-md bg-white/5 px-2 py-1 text-xs text-white/55">
-          {todo.priority === 1 ? "高优先级" : "普通"}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className="todo-priority rounded-md px-2 py-1 text-xs">
+            {todo.priority === 1 ? "高优先级" : "普通"}
+          </span>
+          {todo.completed && <span className="flex items-center gap-1 text-xs text-[var(--todo-completed)]">
+            <Check aria-hidden="true" className="size-3.5" />已完成
+          </span>}
+        </div>
       </div>
       <div className="mt-4 flex items-center gap-3">
         <progress
@@ -130,14 +137,14 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
             {todo.items.map((item) => (
               <li key={item.id} className="pl-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                 <div className="flex items-start justify-between gap-3">
-                  <span className="min-w-0 flex-1">{item.topic}</span>
+                  <span className={`min-w-0 flex-1 ${item.completed ? "text-[var(--todo-completed)] line-through decoration-current/40" : ""}`}>{item.topic}</span>
                   <input
                     type="checkbox"
                     aria-label={`${item.topic}完成状态`}
                     checked={item.completed}
                     disabled={!actions || savingItem || deleting || editLocked}
                     onChange={(event) => { void setCompleted(item.id, event.currentTarget.checked); }}
-                    className="mt-1 size-4 shrink-0 cursor-pointer accent-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-1 size-4 shrink-0 cursor-pointer accent-[var(--todo-accent)] disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
               </li>

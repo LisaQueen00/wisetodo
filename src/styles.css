@@ -9,6 +9,7 @@
   --surface-todo: #211a2b;
   --priority-high: #ef6a76;
   --priority-normal: #a881d8;
+  --todo-completed: #b4c7be;
   --text-primary: #f4eef9;
   background: var(--surface-window);
   font-synthesis: none;
@@ -42,8 +43,37 @@ progress {
 }
 
 progress::-webkit-progress-bar { background: #ffffff14; }
-progress::-webkit-progress-value { background: var(--priority-normal); }
-progress::-moz-progress-bar { background: var(--priority-normal); }
+progress::-webkit-progress-value { background: var(--todo-accent, var(--priority-normal)); }
+progress::-moz-progress-bar { background: var(--todo-accent, var(--priority-normal)); }
+
+/* State styling stays on the card; priority and completion remain independent. */
+.todo-card {
+  --todo-priority: var(--priority-normal);
+  --todo-accent: var(--todo-priority);
+  background: var(--surface-todo);
+  border-color: color-mix(in srgb, var(--todo-accent) 35%, transparent);
+  border-inline-start: 3px solid var(--todo-accent);
+}
+
+.todo-card[data-priority="1"] { --todo-priority: var(--priority-high); }
+
+.todo-priority {
+  color: var(--todo-priority);
+  background: color-mix(in srgb, var(--todo-priority) 12%, transparent);
+}
+
+.todo-card[data-completed="true"]:not([data-editing="true"]) {
+  --todo-accent: var(--todo-completed);
+  background: #1d2324;
+  opacity: 0.8;
+}
+
+.todo-card[data-completed="true"] .todo-title { color: var(--todo-completed); }
+
+/* Keep controls and error messages readable while the user interacts. */
+.todo-card[data-completed="true"]:hover,
+.todo-card[data-completed="true"]:focus-within,
+.todo-card[data-completed="true"]:has([role="alert"]) { opacity: 1; }
 
 :focus-visible {
   outline: 2px solid var(--priority-normal);

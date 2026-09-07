@@ -34,11 +34,13 @@ it("saves each child, updates progress and moves completed Todos without collaps
   expect(screen.getByRole("progressbar")).toHaveAttribute("value", "0.5");
   fireEvent.click(screen.getAllByRole("checkbox")[1]);
   await screen.findByRole("list", { name: "已完成 Todo" });
+  expect(screen.getByRole("button", { name: original.topic }).closest("li")).toHaveAttribute("data-completed", "true");
   expect(screen.getByRole("progressbar")).toHaveAttribute("value", "1");
   expect(screen.getByRole("button", { name: original.topic })).toHaveAttribute("aria-expanded", "true");
   expect(within(screen.getByRole("list", { name: "已完成 Todo" })).getAllByRole("checkbox")).toHaveLength(2);
   fireEvent.click(screen.getAllByRole("checkbox")[0]);
   await screen.findByRole("list", { name: "未完成 Todo" });
+  expect(screen.getByRole("button", { name: original.topic }).closest("li")).toHaveAttribute("data-completed", "false");
   expect(screen.getAllByRole("checkbox")[0]).not.toBeChecked();
   expect(mutations.setItemCompleted).toHaveBeenLastCalledWith(original.id, original.items[0].id, false);
 });
