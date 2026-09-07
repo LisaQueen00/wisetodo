@@ -16,7 +16,7 @@ describe("App", () => {
 
     expect(screen.getByRole("heading", { name: "WiseTodo" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Chat" })).toBeInTheDocument();
-    expect(screen.getByText("Todo 数据连接待接入")).toBeInTheDocument();
+    expect(screen.getByText("请通过桌面应用查看 Todo")).toBeInTheDocument();
   });
 
   it("renders every returned todo in source order with its progress", async () => {
@@ -36,7 +36,7 @@ describe("App", () => {
   it("shows a real empty result separately from an unconnected data source", async () => {
     render(<App loadTodos={async () => []} />);
     expect(await screen.findByText("还没有 Todo")).toBeInTheDocument();
-    expect(screen.queryByText("Todo 数据连接待接入")).not.toBeInTheDocument();
+    expect(screen.queryByText("请通过桌面应用查看 Todo")).not.toBeInTheDocument();
   });
 
   it("allows retry after a read failure", async () => {
@@ -60,5 +60,24 @@ describe("App", () => {
     await screen.findByRole("list");
     resolveOld([]);
     await waitFor(() => expect(screen.getAllByRole("listitem")).toHaveLength(24));
+  });
+
+  it.each(["ready", "error"])("shows loading when switching away from a %s source", async (status) => {
+    const oldLoad = status === "ready"
+      ? loadPreviewTodos
+      : async () => { throw new Error("Database unavailable"); };
+    const { rerender } = render(<App loadTodos={oldLoad} />);
+    await screen.findByRole(status === "ready" ? "list" : "alert");
+
+    let resolveNew!: (todos: Todo[]) => void;
+    const newLoad = vi.fn(() => new Promise<Todo[]>((resolve) => { resolveNew = resolve; }));
+    rerender(<App loadTodos={newLoad} />);
+    expect(screen.getByText("正在读取 Todo…")).toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    await waitFor(() => expect(newLoad).toHaveBeenCalledOnce());
+    resolveNew([]);
+    expect(await screen.findByText("还没有 Todo")).toBeInTheDocument();
   });
 });

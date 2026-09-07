@@ -1,3 +1,18 @@
+mod sidecar;
+
+use std::sync::Arc;
+use tauri::Manager;
+
+#[tauri::command]
+async fn todos_list(
+    backend: tauri::State<'_, Arc<sidecar::TodoBackend>>,
+) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.list())
+        .await
+        .map_err(|_| "Todo 读取任务异常终止".to_owned())?
+}
+
 #[tauri::command]
 fn health() -> &'static str {
     "ok"
@@ -15,7 +30,17 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![health])
-        .run(tauri::generate_context!())
-        .expect("error while running WiseTodo");
+        .setup(|app| {
+            let database_path = app.path().app_data_dir()?.join("wisetodo.db");
+            app.manage(Arc::new(sidecar::TodoBackend::new(database_path)));
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![health, todos_list])
+        .build(tauri::generate_context!())
+        .expect("error while building WiseTodo")
+        .run(|app, event| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                app.state::<Arc<sidecar::TodoBackend>>().shutdown();
+            }
+        });
 }

@@ -1,26 +1,29 @@
 import { useEffect, useState } from "react";
 import type { LoadTodos, Todo } from "./types";
 
-type State = { status: "loading" } | { status: "error" } | { status: "ready"; todos: Todo[] };
+type State = { source: LoadTodos; attempt: number } & (
+  { status: "error" } | { status: "ready"; todos: Todo[] }
+);
 
 export function TodoWorkspace({ loadTodos }: { loadTodos: LoadTodos }) {
-  const [state, setState] = useState<State>({ status: "loading" });
+  const [state, setState] = useState<State | null>(null);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let active = true;
     Promise.resolve().then(loadTodos).then(
-      (todos) => { if (active) setState({ status: "ready", todos }); },
-      () => { if (active) setState({ status: "error" }); },
+      (todos) => { if (active) setState({ source: loadTodos, attempt, status: "ready", todos }); },
+      () => { if (active) setState({ source: loadTodos, attempt, status: "error" }); },
     );
     return () => { active = false; };
   }, [loadTodos, attempt]);
 
-  if (state.status === "loading") return <p role="status">正在读取 Todo…</p>;
+  if (!state || state.source !== loadTodos || state.attempt !== attempt) {
+    return <p role="status">正在读取 Todo…</p>;
+  }
   if (state.status === "error") return (
     <div role="alert" className="rounded-xl border border-white/15 p-6">
       <p>读取 Todo 失败，请重试。</p>
       <button className="mt-3 rounded-lg bg-white/10 px-3 py-2" onClick={() => {
-        setState({ status: "loading" });
         setAttempt((value) => value + 1);
       }}>重新读取</button>
     </div>

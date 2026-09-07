@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from wisetodo.errors import WiseTodoError
+
 
 class IpcRequest(BaseModel):
     type: Literal["request"] = "request"
@@ -21,5 +23,13 @@ class IpcResponse(BaseModel):
     type: Literal["response"] = "response"
     request_id: str = Field(alias="requestId")
     result: dict[str, Any]
+
+    model_config = {"populate_by_name": True}
+
+
+class IpcFailure(BaseModel):
+    type: Literal["response"] = "response"
+    request_id: str = Field(alias="requestId")
+    error: WiseTodoError
 
     model_config = {"populate_by_name": True}

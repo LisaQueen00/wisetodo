@@ -16,8 +16,8 @@ function App({ loadTodos, preview = false }: { loadTodos?: LoadTodos; preview?: 
           {preview && <p className="mb-4 rounded-lg bg-white/5 p-3 text-xs text-white/60">示例数据预览 · 不会写入数据库</p>}
           {loadTodos ? <TodoWorkspace key={preview ? "preview" : "live"} loadTodos={loadTodos} /> : (
             <div role="status" className="rounded-2xl border border-dashed border-white/15 p-6">
-              <p>Todo 数据连接待接入</p>
-              <p className="mt-2 text-sm text-white/50">接入本地数据库后将在这里显示全部任务。</p>
+              <p>请通过桌面应用查看 Todo</p>
+              <p className="mt-2 text-sm text-white/50">浏览器无法连接本地数据库，请启动 WiseTodo 桌面应用。</p>
             </div>
           )}
         </div>
