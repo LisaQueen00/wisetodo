@@ -1,13 +1,37 @@
 import { ChevronRight } from "lucide-react";
-import { useId } from "react";
-import type { Todo } from "./types";
+import { useId, useState } from "react";
+import { TodoEditor } from "./TodoEditor";
+import type { Todo, TodoActions } from "./types";
 
-export function TodoCard({ todo, expanded, onToggle }: {
+export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocked, onEdit }: {
   todo: Todo;
   expanded: boolean;
   onToggle: (todoId: string) => void;
+  actions?: TodoActions;
+  editing: boolean;
+  editLocked: boolean;
+  onEdit: (todoId: string | null) => void;
 }) {
   const panelId = useId();
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function remove() {
+    if (!actions || deleting) return;
+    setDeleting(true);
+    setError(false);
+    try {
+      await actions.mutations.delete(todo.id);
+      actions.onDeleted(todo.id);
+    } catch { setError(true); }
+    finally { setDeleting(false); }
+  }
+
+  if (editing && actions) return (
+    <li className="rounded-2xl border border-white/20 bg-[var(--surface-todo)] p-4">
+      <TodoEditor todo={todo} mutations={actions.mutations} onSaved={actions.onSaved} onClose={() => onEdit(null)} />
+    </li>
+  );
 
   return (
     <li className="rounded-2xl border border-white/10 bg-[var(--surface-todo)] p-4">
@@ -45,6 +69,15 @@ export function TodoCard({ todo, expanded, onToggle }: {
           {Math.round(todo.progress * 100)}% · {todo.items.length} 个子项
         </span>
       </div>
+      {actions && (
+        <div className="mt-3 flex gap-3 text-xs text-white/65">
+          <button type="button" className="disabled:opacity-30" disabled={deleting || editLocked} aria-label={`编辑 ${todo.topic}`} onClick={() => onEdit(todo.id)}>编辑</button>
+          <button type="button" className="disabled:opacity-30" disabled={deleting || editLocked} aria-label={`删除 ${todo.topic}`} onClick={() => { void remove(); }}>
+            {deleting ? "正在删除…" : "删除 Todo"}
+          </button>
+          {error && <p role="alert">删除失败，请重试。</p>}
+        </div>
+      )}
       <div id={panelId} hidden={!expanded}>
         {expanded && (
           <ol

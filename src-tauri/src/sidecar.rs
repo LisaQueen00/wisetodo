@@ -29,6 +29,22 @@ impl TodoBackend {
     }
 
     pub fn list(&self) -> Result<Value, String> {
+        self.call("todos.list", json!({}))
+    }
+
+    pub fn create(&self, todo: Value) -> Result<Value, String> {
+        self.call("user.todos.create", json!({"todo": todo}))
+    }
+
+    pub fn update(&self, todo_id: String, todo: Value) -> Result<Value, String> {
+        self.call("user.todos.update", json!({"todo_id": todo_id, "todo": todo}))
+    }
+
+    pub fn delete(&self, todo_id: String) -> Result<Value, String> {
+        self.call("user.todos.delete", json!({"todo_id": todo_id}))
+    }
+
+    fn call(&self, method: &str, params: Value) -> Result<Value, String> {
         let mut slot = self.process.lock().map_err(|_| "Todo 服务状态不可用")?;
         if self.stopping.load(Ordering::Acquire) {
             return Err("Todo 服务正在关闭".into());
@@ -39,7 +55,7 @@ impl TodoBackend {
         let result = slot
             .as_mut()
             .expect("sidecar initialized")
-            .request("todos.list", &self.stopping);
+            .request(method, params, &self.stopping);
         // A failed/timed-out connection must not be reused: its next line may be stale.
         if result.is_err() {
             slot.take();
@@ -150,11 +166,11 @@ impl Sidecar {
         })
     }
 
-    fn request(&mut self, method: &str, stopping: &AtomicBool) -> Result<Value, String> {
+    fn request(&mut self, method: &str, params: Value, stopping: &AtomicBool) -> Result<Value, String> {
         self.next_id += 1;
         let request_id = format!("todo-{}", self.next_id);
         let request = json!({
-            "type": "request", "requestId": request_id, "method": method, "params": {}
+            "type": "request", "requestId": request_id, "method": method, "params": params
         });
         writeln!(self.input, "{request}")
             .and_then(|_| self.input.flush())
@@ -198,8 +214,8 @@ fn decode_response(line: &str, request_id: &str) -> Result<Value, String> {
             .to_owned());
     }
     let result = response.get("result").ok_or("Todo 服务响应缺少结果")?;
-    if !result["todos"].is_array() {
-        return Err("Todo 服务响应缺少任务列表".into());
+    if !(result["todos"].is_array() || result["todo"].is_object() || result["deleted"].is_boolean()) {
+        return Err("Todo 服务响应缺少结果数据".into());
     }
     Ok(result.clone())
 }
@@ -265,6 +281,21 @@ finally:
         assert_eq!(listed["todos"][0]["progress"], 0.0);
         assert_eq!(listed["todos"][0]["items"][0]["topic"], "配置环境");
         assert_eq!(first_pid, backend.process.lock().unwrap().as_ref().unwrap().child.id());
+
+        let created = backend.create(json!({"topic":"写入测试", "items":["子项一", "子项二"]})).unwrap();
+        let id = created["todo"]["id"].as_str().unwrap().to_owned();
+        let updated = backend.update(id.clone(), json!({
+            "topic":"已修改", "priority":1,
+            "items":[
+                {"id":created["todo"]["items"][0]["id"], "topic":"子项一"},
+                {"id":created["todo"]["items"][1]["id"], "topic":"改名子项"}
+            ]
+        })).unwrap();
+        assert_eq!(updated["todo"]["topic"], "已修改");
+        assert_eq!(updated["todo"]["items"][0]["id"], created["todo"]["items"][0]["id"]);
+        assert_ne!(updated["todo"]["items"][1]["id"], created["todo"]["items"][1]["id"]);
+        assert_eq!(backend.delete(id).unwrap(), json!({"deleted":true}));
+        assert_eq!(backend.list().unwrap(), listed);
 
         // Simulate a crash. The failed connection is discarded and retry starts a fresh process.
         {

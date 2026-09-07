@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, Field, computed_field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 Priority = Literal[0, 1]
 
@@ -45,6 +45,11 @@ class TodoChanges(BaseModel):
     priority: Priority | None = None
     items: list[str] | None = Field(default=None, min_length=2)
 
+    @field_validator("topic")
+    @classmethod
+    def topic_must_not_be_blank(cls, value: str | None) -> str | None:
+        return TodoInput.topic_must_not_be_blank(value) if value is not None else None
+
     @field_validator("items")
     @classmethod
     def items_must_not_be_blank(cls, items: list[str] | None) -> list[str] | None:
@@ -57,6 +62,36 @@ class TodoItem(BaseModel):
     topic: str
     completed: bool
     position: int
+
+
+class TodoEditItem(BaseModel):
+    id: str | None = None
+    topic: str
+
+    @field_validator("topic")
+    @classmethod
+    def topic_must_not_be_blank(cls, value: str) -> str:
+        return TodoInput.topic_must_not_be_blank(value)
+
+
+class TodoEdit(BaseModel):
+    """Full manual edit; IDs identify exact rows even when topics repeat."""
+
+    topic: str
+    priority: Priority = 0
+    items: list[TodoEditItem] = Field(min_length=2)
+
+    @field_validator("topic")
+    @classmethod
+    def topic_must_not_be_blank(cls, value: str) -> str:
+        return TodoInput.topic_must_not_be_blank(value)
+
+    @model_validator(mode="after")
+    def unique_item_ids(self) -> TodoEdit:
+        ids = [item.id for item in self.items if item.id is not None]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Duplicate item IDs")
+        return self
 
 
 class Todo(BaseModel):

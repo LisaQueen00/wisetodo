@@ -1,6 +1,6 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { loadDesktopTodos } from "./desktop";
+import { desktopMutations, loadDesktopTodos } from "./desktop";
 import { loadPreviewTodos } from "./preview";
 import { resolveTodoSource } from "./source";
 
@@ -15,7 +15,7 @@ afterEach(() => vi.unstubAllEnvs());
 describe("resolveTodoSource", () => {
   it("selects the real loader in a normal desktop window", async () => {
     vi.mocked(isTauri).mockReturnValue(true);
-    expect(await resolveTodoSource("")).toEqual({ loadTodos: loadDesktopTodos, preview: false });
+    expect(await resolveTodoSource("")).toEqual({ loadTodos: loadDesktopTodos, mutations: desktopMutations, preview: false });
   });
 
   it("leaves the normal browser disconnected instead of presenting a fake empty list", async () => {
@@ -35,6 +35,6 @@ describe("resolveTodoSource", () => {
   it("ignores the preview query in a production desktop build", async () => {
     vi.stubEnv("DEV", false);
     vi.mocked(isTauri).mockReturnValue(true);
-    expect(await resolveTodoSource("?preview=todos")).toEqual({ loadTodos: loadDesktopTodos, preview: false });
+    expect(await resolveTodoSource("?preview=todos")).toEqual({ loadTodos: loadDesktopTodos, mutations: desktopMutations, preview: false });
   });
 });

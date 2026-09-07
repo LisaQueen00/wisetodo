@@ -166,3 +166,40 @@ def test_sidecar_initialization_failure_exits_without_protocol_output(tmp_path: 
     assert result.stdout == ""
     assert "database initialization failed" in result.stderr
     assert str(tmp_path) not in result.stderr
+
+
+def test_sidecar_manual_create_update_delete_and_invalid_update(tmp_path: Path) -> None:
+    path = tmp_path / "writes.db"
+    create = request("create", "user.todos.create")
+    create["params"] = {"todo": {"topic": "阅读", "items": ["第一章", "第二章"]}}
+    created_process = run_sidecar(path, [create], tmp_path)
+    assert created_process.returncode == 0
+    todo = json.loads(created_process.stdout)["result"]["todo"]
+    update = request("update", "user.todos.update")
+    update["params"] = {
+        "todo_id": todo["id"],
+        "todo": {
+            "topic": "阅读新版",
+            "priority": 1,
+            "items": [{"id": item["id"], "topic": item["topic"]} for item in todo["items"]],
+        },
+    }
+    invalid = request("invalid", "user.todos.update")
+    invalid["params"] = {"todo_id": todo["id"], "todo": {"topic": "Invalid", "items": []}}
+    delete = request("delete", "user.todos.delete")
+    delete["params"] = {"todo_id": todo["id"]}
+    result = run_sidecar(
+        path,
+        [update, invalid, request("read", "todos.list"), delete, request("empty", "todos.list")],
+        tmp_path,
+    )
+    assert result.returncode == 0
+    updated, failed, read, deleted, empty = map(json.loads, result.stdout.splitlines())
+    assert updated["result"]["todo"]["topic"] == "阅读新版"
+    assert updated["result"]["todo"]["items"] == todo["items"]
+    assert failed["error"]["code"] == "TODO_VALIDATION_FAILED"
+    assert read["result"]["todos"] == [updated["result"]["todo"]]
+    assert deleted["result"] == {"deleted": True}
+    assert empty["result"] == {"todos": []}
+    restarted = run_sidecar(path, [request("persisted", "todos.list")], tmp_path)
+    assert json.loads(restarted.stdout)["result"] == {"todos": []}

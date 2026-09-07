@@ -10,7 +10,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.messages import IpcCancel, IpcFailure, IpcRequest, IpcResponse
-from wisetodo.todos import TodoService
+from wisetodo.todos import TodoCaller, TodoService
+from wisetodo.todos.models import TodoEdit, TodoInput
 
 IncomingMessage: TypeAdapter[IpcRequest | IpcCancel] = TypeAdapter(IpcRequest | IpcCancel)
 
@@ -26,6 +27,21 @@ async def dispatch(request: IpcRequest, todo_service: TodoService | None = None)
         if todo_service is None:
             raise RuntimeError("Todo service is not initialized")
         return {"todos": [todo.model_dump(mode="json") for todo in todo_service.list()]}
+    if request.method in {"user.todos.create", "user.todos.update", "user.todos.delete"}:
+        if todo_service is None:
+            raise RuntimeError("Todo service is not initialized")
+        if request.method == "user.todos.create":
+            todo = todo_service.create(TodoInput.model_validate(request.params.get("todo")))
+            return {"todo": todo.model_dump(mode="json")}
+        todo_id = request.params.get("todo_id")
+        if not isinstance(todo_id, str) or not todo_id:
+            raise ValueError("Missing Todo ID")
+        if request.method == "user.todos.delete":
+            return {"deleted": todo_service.delete(todo_id, caller=TodoCaller.USER)}
+        updated = todo_service.update(todo_id, TodoEdit.model_validate(request.params.get("todo")))
+        if updated is None:
+            raise LookupError("Todo not found")
+        return {"todo": updated.model_dump(mode="json")}
     raise UnknownMethodError("Unknown IPC method")
 
 
@@ -74,11 +90,31 @@ async def run_stdio_server(todo_service: TodoService | None = None) -> None:
                 message="Unknown IPC method",
                 user_message="当前版本不支持此操作。",
             )
+        except ValueError:
+            error = WiseTodoError(
+                code=ErrorCode.TODO_VALIDATION_FAILED,
+                message="Invalid Todo data",
+                user_message="标题和子项不能为空，且至少保留两个子项。请检查输入后重试。",
+            )
+        except LookupError:
+            error = WiseTodoError(
+                code=ErrorCode.TODO_NOT_FOUND,
+                message="Todo not found",
+                user_message="此 Todo 已不存在，请重新读取列表。",
+            )
         except SQLAlchemyError:
             error = WiseTodoError(
-                code=ErrorCode.TODO_READ_FAILED,
+                code=(
+                    ErrorCode.TODO_SAVE_FAILED
+                    if message.method.startswith("user.todos.")
+                    else ErrorCode.TODO_READ_FAILED
+                ),
                 message="Could not read todos",
-                user_message="无法读取待办，请重试。",
+                user_message=(
+                    "无法保存待办，请重试。"
+                    if message.method.startswith("user.todos.")
+                    else "无法读取待办，请重试。"
+                ),
                 retryable=True,
             )
         except Exception:

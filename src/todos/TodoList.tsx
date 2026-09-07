@@ -1,12 +1,15 @@
 import { useId, useState } from "react";
 import { TodoCard } from "./TodoCard";
-import type { Todo } from "./types";
+import type { Todo, TodoActions } from "./types";
 
-function TodoSection({ title, todos, expandedIds, onToggle }: {
+function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, onEdit }: {
   title: "未完成" | "已完成";
   todos: readonly Todo[];
   expandedIds: ReadonlySet<string>;
   onToggle: (todoId: string) => void;
+  actions?: TodoActions;
+  editingId: string | null;
+  onEdit: (todoId: string | null) => void;
 }) {
   const headingId = useId();
   if (todos.length === 0) return null;
@@ -26,6 +29,10 @@ function TodoSection({ title, todos, expandedIds, onToggle }: {
             todo={todo}
             expanded={expandedIds.has(todo.id)}
             onToggle={onToggle}
+            actions={actions}
+            editing={editingId === todo.id}
+            editLocked={editingId !== null}
+            onEdit={onEdit}
           />
         ))}
       </ul>
@@ -33,8 +40,9 @@ function TodoSection({ title, todos, expandedIds, onToggle }: {
   );
 }
 
-export function TodoList({ todos }: { todos: readonly Todo[] }) {
+export function TodoList({ todos, actions }: { todos: readonly Todo[]; actions?: TodoActions }) {
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   function toggleTodo(todoId: string) {
     setExpandedIds((previous) => {
@@ -51,8 +59,10 @@ export function TodoList({ todos }: { todos: readonly Todo[] }) {
 
   return (
     <div className="space-y-7">
-      <TodoSection title="未完成" todos={incomplete} expandedIds={expandedIds} onToggle={toggleTodo} />
-      <TodoSection title="已完成" todos={completed} expandedIds={expandedIds} onToggle={toggleTodo} />
+      <TodoSection title="未完成" todos={incomplete} expandedIds={expandedIds} onToggle={toggleTodo}
+        actions={actions} editingId={editingId} onEdit={setEditingId} />
+      <TodoSection title="已完成" todos={completed} expandedIds={expandedIds} onToggle={toggleTodo}
+        actions={actions} editingId={editingId} onEdit={setEditingId} />
     </div>
   );
 }

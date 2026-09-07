@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import cast
 
 from sqlalchemy import Select, select
@@ -13,6 +13,7 @@ from wisetodo.todos.models import (
     Todo,
     TodoCaller,
     TodoChanges,
+    TodoEdit,
     TodoInput,
     TodoItem,
 )
@@ -52,7 +53,7 @@ class TodoService:
             records = sorted(records, key=self._sort_key)
             return [self._to_domain(record) for record in records]
 
-    def update(self, todo_id: str, changes: TodoChanges) -> Todo | None:
+    def update(self, todo_id: str, changes: TodoChanges | TodoEdit) -> Todo | None:
         with self._sessions.begin() as session:
             record = session.scalar(self._record_query().where(TodoRecord.id == todo_id))
             if record is None:
@@ -62,8 +63,25 @@ class TodoService:
                 record.topic = changes.topic
             if changes.priority is not None:
                 record.priority = changes.priority
-            if changes.items is not None:
+            if isinstance(changes, TodoEdit):
+                existing = {item.id: item for item in record.items}
+                edited: TodoItemRecordList = []
+                for position, item in enumerate(changes.items):
+                    old = existing.get(item.id) if item.id is not None else None
+                    if item.id is not None and old is None:
+                        raise ValueError("Item does not belong to this Todo")
+                    updated = (
+                        old
+                        if old is not None and old.topic == item.topic
+                        else (TodoItemRecord(topic=item.topic, completed=False))
+                    )
+                    updated.position = position
+                    edited.append(updated)
+                record.items = edited
+            elif changes.items is not None:
                 self._update_items(record, changes.items)
+
+            record.updated_at = datetime.now(UTC)
 
             session.flush()
             session.refresh(record)

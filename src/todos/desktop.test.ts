@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadDesktopTodos } from "./desktop";
+import { desktopMutations, loadDesktopTodos } from "./desktop";
 import { loadPreviewTodos } from "./preview";
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
@@ -8,6 +8,21 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 beforeEach(() => vi.resetAllMocks());
 
 describe("loadDesktopTodos", () => {
+  it("uses fixed user mutation commands and sends IDs only on updates", async () => {
+    const [todo] = await loadPreviewTodos();
+    const draft = { topic: todo.topic, priority: todo.priority,
+      items: todo.items.map((item) => ({ id: item.id, topic: item.topic })) };
+    vi.mocked(invoke).mockResolvedValue({ todo });
+    await desktopMutations.create(draft);
+    expect(invoke).toHaveBeenLastCalledWith("todos_create", {
+      todo: { ...draft, items: draft.items.map((item) => item.topic) },
+    });
+    await desktopMutations.update(todo.id, draft);
+    expect(invoke).toHaveBeenLastCalledWith("todos_update", { todoId: todo.id, todo: draft });
+    vi.mocked(invoke).mockResolvedValue({ deleted: true });
+    await desktopMutations.delete(todo.id);
+    expect(invoke).toHaveBeenLastCalledWith("todos_delete", { todoId: todo.id });
+  });
   it("loads the full service response using only the fixed desktop command", async () => {
     const todos = await loadPreviewTodos();
     vi.mocked(invoke).mockResolvedValue({ todos });

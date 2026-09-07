@@ -18,3 +18,21 @@ export interface Todo {
   completed: boolean;
 }
 export type LoadTodos = () => Promise<Todo[]>;
+
+export interface TodoDraft {
+  topic: string;
+  priority: 0 | 1;
+  items: { id?: string; topic: string }[];
+}
+
+export interface TodoMutations {
+  create: (draft: TodoDraft) => Promise<Todo>;
+  update: (todoId: string, draft: TodoDraft) => Promise<Todo>;
+  delete: (todoId: string) => Promise<void>;
+}
+
+export interface TodoActions {
+  mutations: TodoMutations;
+  onSaved: (todo: Todo) => void;
+  onDeleted: (todoId: string) => void;
+}

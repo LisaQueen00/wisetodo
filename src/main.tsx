@@ -5,10 +5,10 @@ import { resolveTodoSource } from "./todos/source";
 import "./styles.css";
 
 async function mount() {
-  const { loadTodos, preview } = await resolveTodoSource(window.location.search);
+  const { loadTodos, mutations, preview } = await resolveTodoSource(window.location.search);
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <App loadTodos={loadTodos} preview={preview} />
+      <App loadTodos={loadTodos} mutations={mutations} preview={preview} />
     </StrictMode>,
   );
 }

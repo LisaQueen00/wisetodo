@@ -14,6 +14,37 @@ async fn todos_list(
 }
 
 #[tauri::command]
+async fn todos_create(
+    backend: tauri::State<'_, Arc<sidecar::TodoBackend>>,
+    todo: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.create(todo))
+        .await.map_err(|_| "Todo 保存任务异常终止".to_owned())?
+}
+
+#[tauri::command]
+async fn todos_update(
+    backend: tauri::State<'_, Arc<sidecar::TodoBackend>>,
+    todo_id: String,
+    todo: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.update(todo_id, todo))
+        .await.map_err(|_| "Todo 保存任务异常终止".to_owned())?
+}
+
+#[tauri::command]
+async fn todos_delete(
+    backend: tauri::State<'_, Arc<sidecar::TodoBackend>>,
+    todo_id: String,
+) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.delete(todo_id))
+        .await.map_err(|_| "Todo 删除任务异常终止".to_owned())?
+}
+
+#[tauri::command]
 fn health() -> &'static str {
     "ok"
 }
@@ -35,7 +66,7 @@ pub fn run() {
             app.manage(Arc::new(sidecar::TodoBackend::new(database_path)));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![health, todos_list])
+        .invoke_handler(tauri::generate_handler![health, todos_list, todos_create, todos_update, todos_delete])
         .build(tauri::generate_context!())
         .expect("error while building WiseTodo")
         .run(|app, event| {

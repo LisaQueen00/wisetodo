@@ -1,7 +1,9 @@
 import { TodoWorkspace } from "./todos/TodoWorkspace";
-import type { LoadTodos } from "./todos/types";
+import type { LoadTodos, TodoMutations } from "./todos/types";
 
-function App({ loadTodos, preview = false }: { loadTodos?: LoadTodos; preview?: boolean }) {
+function App({ loadTodos, mutations, preview = false }: {
+  loadTodos?: LoadTodos; mutations?: TodoMutations; preview?: boolean;
+}) {
   return (
     <main className="grid h-dvh min-h-[520px] grid-cols-[minmax(0,3fr)_minmax(0,2fr)] overflow-hidden bg-[var(--surface-window)] text-[var(--text-primary)]">
       <section aria-label="Todo 工作区" className="flex min-h-0 min-w-0 flex-col border-r border-white/10">
@@ -14,7 +16,7 @@ function App({ loadTodos, preview = false }: { loadTodos?: LoadTodos; preview?: 
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-5" tabIndex={0} aria-label="Todo 列表滚动区">
           {preview && <p className="mb-4 rounded-lg bg-white/5 p-3 text-xs text-white/60">示例数据预览 · 不会写入数据库</p>}
-          {loadTodos ? <TodoWorkspace key={preview ? "preview" : "live"} loadTodos={loadTodos} /> : (
+          {loadTodos ? <TodoWorkspace key={preview ? "preview" : "live"} loadTodos={loadTodos} mutations={mutations} /> : (
             <div role="status" className="rounded-2xl border border-dashed border-white/15 p-6">
               <p>请通过桌面应用查看 Todo</p>
               <p className="mt-2 text-sm text-white/50">浏览器无法连接本地数据库，请启动 WiseTodo 桌面应用。</p>

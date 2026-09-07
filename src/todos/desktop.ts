@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { LoadTodos, Todo, TodoItem } from "./types";
+import type { LoadTodos, Todo, TodoItem, TodoMutations } from "./types";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -43,4 +43,26 @@ export const loadDesktopTodos: LoadTodos = async () => {
     throw new Error("Invalid todos_list response");
   }
   return result.todos;
+};
+
+function savedTodo(result: unknown): Todo {
+  if (!isObject(result) || !isTodo(result.todo)) throw new Error("Invalid saved Todo response");
+  return result.todo;
+}
+
+export const desktopMutations: TodoMutations = {
+  async create(draft) {
+    return savedTodo(await invoke("todos_create", {
+      todo: { ...draft, items: draft.items.map((item) => item.topic) },
+    }));
+  },
+  async update(todoId, draft) {
+    return savedTodo(await invoke("todos_update", { todoId, todo: draft }));
+  },
+  async delete(todoId) {
+    const result = await invoke<unknown>("todos_delete", { todoId });
+    if (!isObject(result) || typeof result.deleted !== "boolean") {
+      throw new Error("Invalid delete response");
+    }
+  },
 };
