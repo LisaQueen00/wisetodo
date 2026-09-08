@@ -48,6 +48,8 @@ src-tauri/binaries/*
 *.sqlite3-shm
 *.sqlite3-wal
 config.yaml
+model-settings.json
+model-settings.dev.json
 .env
 .env.*
 !.env.example

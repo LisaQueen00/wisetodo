@@ -10,6 +10,7 @@ from wisetodo.database import initialize_database
 from wisetodo.ipc.server import run_stdio_server
 from wisetodo.sessions.service import SessionService
 from wisetodo.settings import SettingsService
+from wisetodo.settings.development import DevelopmentSettingsStore
 from wisetodo.settings.storage import create_settings_store
 from wisetodo.todos import TodoService
 
@@ -21,7 +22,10 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description="WiseTodo JSON Lines sidecar")
     parser.add_argument("--database", type=Path, required=True, help="Absolute SQLite file path")
+    parser.add_argument("--dev-model-config", type=Path, help="Explicit development JSON path")
     args = parser.parse_args()
+    if args.dev_model_config is not None and not args.dev_model_config.is_absolute():
+        parser.error("--dev-model-config requires an absolute path")
 
     try:
         database = initialize_database(args.database)
@@ -34,7 +38,12 @@ def main() -> None:
             run_stdio_server(
                 TodoService(database.sessions),
                 SessionService(database.sessions),
-                SettingsService(create_settings_store(args.database.parent)),
+                SettingsService(
+                    DevelopmentSettingsStore(
+                        create_settings_store(args.database.parent),
+                        args.dev_model_config,
+                    )
+                ),
             )
         )
     finally:

@@ -127,6 +127,13 @@ fn sidecar_command() -> Result<Command, String> {
         }
         let mut command = Command::new(python);
         command.args(["-u", "-m", "wisetodo.main"]);
+        // Development builds only; release builds never consult this variable.
+        if let Some(path) = std::env::var_os("WISETODO_DEV_MODEL_CONFIG") {
+            if !Path::new(&path).is_absolute() {
+                return Err("开发模型配置必须使用绝对路径".into());
+            }
+            command.arg("--dev-model-config").arg(path);
+        }
         command.current_dir(root);
         Ok(command)
     }
