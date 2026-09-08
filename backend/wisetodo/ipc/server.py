@@ -11,7 +11,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.messages import IpcCancel, IpcFailure, IpcRequest, IpcResponse
 from wisetodo.ipc.sessions import METHODS, SessionRequestError, dispatch_session
+from wisetodo.ipc.settings import METHODS as SETTINGS_METHODS
+from wisetodo.ipc.settings import SettingsRequestError, dispatch_settings
 from wisetodo.sessions.service import SessionReadOnlyError, SessionService
+from wisetodo.settings import SettingsService
 from wisetodo.todos import TodoCaller, TodoService
 from wisetodo.todos.models import TodoEdit, TodoInput
 
@@ -26,7 +29,12 @@ async def dispatch(
     request: IpcRequest,
     todo_service: TodoService | None = None,
     session_service: SessionService | None = None,
+    settings_service: SettingsService | None = None,
 ) -> dict[str, Any]:
+    if request.method in SETTINGS_METHODS:
+        if settings_service is None:
+            raise RuntimeError("Settings service is not initialized")
+        return dispatch_settings(request, settings_service)
     if request.method in METHODS:
         if session_service is None:
             raise RuntimeError("Session service is not initialized")
@@ -105,7 +113,9 @@ def _handle_invalid_request(line: str) -> None:
 
 
 async def run_stdio_server(
-    todo_service: TodoService | None = None, session_service: SessionService | None = None
+    todo_service: TodoService | None = None,
+    session_service: SessionService | None = None,
+    settings_service: SettingsService | None = None,
 ) -> None:
     """Read one JSON request per line and emit one JSON response per line."""
     while line := await asyncio.to_thread(sys.stdin.readline):
@@ -119,8 +129,8 @@ async def run_stdio_server(
             continue
 
         try:
-            result = await dispatch(message, todo_service, session_service)
-        except SessionRequestError as failure:
+            result = await dispatch(message, todo_service, session_service, settings_service)
+        except (SessionRequestError, SettingsRequestError) as failure:
             error = failure.error
         except SessionReadOnlyError:
             error = WiseTodoError(

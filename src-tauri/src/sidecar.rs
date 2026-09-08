@@ -32,6 +32,14 @@ impl TodoBackend {
         self.call("todos.list", json!({}))
     }
 
+    pub fn settings_get(&self) -> Result<Value, String> {
+        self.call("settings.get", json!({}))
+    }
+
+    pub fn settings_save(&self, settings: Value) -> Result<Value, String> {
+        self.call("user.settings.save", json!({"settings": settings}))
+    }
+
     pub fn sessions_list(&self) -> Result<Value, String> {
         self.call("sessions.list", json!({}))
     }
@@ -247,7 +255,8 @@ fn decode_response(line: &str, request_id: &str) -> Result<Value, String> {
     }
     let result = response.get("result").ok_or("Todo 服务响应缺少结果")?;
     if !(result["todos"].is_array() || result["todo"].is_object() || result["deleted"].is_boolean()
-        || result["sessions"].is_array() || result["session"].is_object()) {
+        || result["sessions"].is_array() || result["session"].is_object()
+        || result.get("settings").is_some_and(|value| value.is_null() || value.is_object())) {
         return Err("Todo 服务响应缺少结果数据".into());
     }
     Ok(result.clone())
@@ -259,6 +268,8 @@ mod tests {
 
     #[test]
     fn decodes_success_and_errors_and_rejects_mismatched_ids() {
+        assert_eq!(decode_response(r#"{"type":"response","requestId":"1","result":{"settings":null}}"#, "1").unwrap(), json!({"settings":null}));
+        assert!(decode_response(r#"{"type":"response","requestId":"1","result":{"settings":[]}}"#, "1").is_err());
         assert_eq!(decode_response(r#"{"type":"response","requestId":"1","result":{"todos":[]}}"#, "1").unwrap(), json!({"todos":[]}));
         assert!(decode_response(r#"{"type":"response","requestId":"2","result":{"todos":[]}}"#, "1").is_err());
         assert_eq!(decode_response(r#"{"type":"response","requestId":"1","error":{"user_message":"读取失败"}}"#, "1").unwrap_err(), "读取失败");
@@ -310,6 +321,10 @@ finally:
         assert!(status.success());
         let listed = backend.list().unwrap();
         assert_eq!(backend.sessions_list().unwrap(), json!({"sessions":[]}));
+        assert_eq!(backend.settings_get().unwrap(), json!({"settings":null}));
+        let settings = backend.settings_save(json!({"base_url":"http://localhost:8000/v1","model":"local"})).unwrap();
+        assert_eq!(settings["settings"]["has_api_key"], false);
+        assert_eq!(backend.settings_get().unwrap(), settings);
         let history = backend.sessions_create("学习项目".to_owned()).unwrap();
         let session_id = history["session"]["id"].as_str().unwrap().to_owned();
         assert_eq!(backend.sessions_get(session_id.clone()).unwrap(), history);

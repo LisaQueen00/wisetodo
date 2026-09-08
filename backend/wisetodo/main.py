@@ -9,6 +9,8 @@ from pathlib import Path
 from wisetodo.database import initialize_database
 from wisetodo.ipc.server import run_stdio_server
 from wisetodo.sessions.service import SessionService
+from wisetodo.settings import SettingsService
+from wisetodo.settings.storage import create_settings_store
 from wisetodo.todos import TodoService
 
 
@@ -29,7 +31,11 @@ def main() -> None:
 
     try:
         asyncio.run(
-            run_stdio_server(TodoService(database.sessions), SessionService(database.sessions))
+            run_stdio_server(
+                TodoService(database.sessions),
+                SessionService(database.sessions),
+                SettingsService(create_settings_store(args.database.parent)),
+            )
         )
     finally:
         database.dispose()
