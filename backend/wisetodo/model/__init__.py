@@ -9,8 +9,11 @@ from wisetodo.model.contracts import (
     ToolDefinition,
 )
 from wisetodo.model.provider import ModelCapabilityError, ModelProvider, ModelRequestError
+from wisetodo.model.runtime import ProviderFactory, RunProviderScope
 
 __all__ = [
+    "ProviderFactory",
+    "RunProviderScope",
     "ModelCapabilityError",
     "ModelMessage",
     "ModelProvider",
