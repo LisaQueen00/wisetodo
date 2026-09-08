@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { SettingsApi, SettingsUpdate, SettingsView } from "./desktop";
+import { connectionMessages } from "./desktop";
 
 const inputClass = "mt-1 w-full rounded-lg border border-white/15 bg-black/20 p-2 text-sm disabled:opacity-50";
 
@@ -35,6 +36,21 @@ export function SettingsPanel({ api }: { api: SettingsApi }) {
   function close() {
     if (saving.current) return;
     setKey(""); setOpen(false); setError(""); trigger.current?.focus();
+  }
+
+  async function testConnection() {
+    if (saving.current || !saved || !api.test) return;
+    saving.current = true; setBusy(true); setNotice(""); setError("");
+    const ticket = generation.current;
+    try {
+      const status = await api.test();
+      if (ticket === generation.current) {
+        const message = Object.hasOwn(connectionMessages, status) ? connectionMessages[status] : "连接测试返回无效状态。";
+        if (status === "ok") setNotice(message); else setError(message);
+      }
+    } catch {
+      if (ticket === generation.current) setError("连接测试未完成，请检查服务后重试。未修改已保存配置。");
+    } finally { saving.current = false; if (ticket === generation.current) setBusy(false); }
   }
 
   async function save() {
@@ -84,9 +100,13 @@ export function SettingsPanel({ api }: { api: SettingsApi }) {
     </div>
     {!ready && !error && <p role="status" className="mt-2 text-white/50">读取模型设置…</p>}
     {ready && !saved && !open && <p className="mt-2 text-white/60">尚未配置模型，请打开 Settings；不影响手动管理 Todo 和查看历史。</p>}
-    {ready && !open && <button type="button" className="mt-2 text-white/50 underline" onClick={() => {
+    {ready && !open && <button type="button" disabled={busy} className="mt-2 text-white/50 underline" onClick={() => {
       setReady(false); setNotice(""); setError(""); setAttempt((value) => value + 1);
     }}>重新读取设置</button>}
+    {ready && saved && !open && api.test && <div className="mt-2">
+      <p className="text-white/50">测试使用已保存配置，仅发送“Reply OK.”，不发送聊天或附件；可能产生少量费用。</p>
+      <button type="button" disabled={busy} className="mt-2 rounded border border-white/15 px-3 py-2 disabled:opacity-40" onClick={() => { void testConnection(); }}>{busy ? "测试中…" : "测试已保存连接"}</button>
+    </div>}
     {error && <p role="alert" className="mt-2 text-rose-300">{error}</p>}
     {!ready && error && <button type="button" className="mt-2 underline" onClick={() => {
       setError(""); setAttempt((value) => value + 1);

@@ -7,6 +7,12 @@ const view = { base_url: "http://localhost:8000/v1", model: "test", has_api_key:
 beforeEach(() => vi.resetAllMocks());
 
 describe("desktop settings", () => {
+  it("uses a parameter-free connection test and rejects unknown status", async () => {
+    vi.mocked(invoke).mockResolvedValueOnce({ connection_test: "ok" }).mockResolvedValueOnce({ connection_test: "secret" });
+    expect(await desktopSettingsApi.test!()).toBe("ok");
+    expect(invoke).toHaveBeenCalledWith("settings_test");
+    await expect(desktopSettingsApi.test!()).rejects.toThrow("Invalid connection test response");
+  });
   it("reads absent and configured settings", async () => {
     vi.mocked(invoke).mockResolvedValueOnce({ settings: null }).mockResolvedValueOnce({ settings: view });
     expect(await desktopSettingsApi.get()).toBeNull();

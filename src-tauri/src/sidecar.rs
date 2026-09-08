@@ -36,6 +36,10 @@ impl TodoBackend {
         self.call("settings.get", json!({}))
     }
 
+    pub fn settings_test(&self) -> Result<Value, String> {
+        self.call("user.settings.test", json!({}))
+    }
+
     pub fn settings_save(&self, settings: Value) -> Result<Value, String> {
         self.call("user.settings.save", json!({"settings": settings}))
     }
@@ -263,7 +267,8 @@ fn decode_response(line: &str, request_id: &str) -> Result<Value, String> {
     let result = response.get("result").ok_or("Todo 服务响应缺少结果")?;
     if !(result["todos"].is_array() || result["todo"].is_object() || result["deleted"].is_boolean()
         || result["sessions"].is_array() || result["session"].is_object()
-        || result.get("settings").is_some_and(|value| value.is_null() || value.is_object())) {
+        || result.get("settings").is_some_and(|value| value.is_null() || value.is_object())
+        || result["connection_test"].is_string()) {
         return Err("Todo 服务响应缺少结果数据".into());
     }
     Ok(result.clone())

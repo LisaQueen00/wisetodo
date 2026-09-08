@@ -16,6 +16,18 @@ async function open() {
 }
 
 describe("model settings panel", () => {
+  it("tests only on explicit click and warns about cost", async () => {
+    const service = api();
+    service.test = vi.fn().mockResolvedValue("ok");
+    render(<SettingsPanel api={service} />);
+    const button = await screen.findByText("测试已保存连接");
+    expect(service.test).not.toHaveBeenCalled();
+    expect(screen.getByText(/可能产生少量费用/)).toBeTruthy();
+    fireEvent.click(button);
+    await screen.findByText(/基本连接测试通过/);
+    expect(service.test).toHaveBeenCalledTimes(1);
+    expect(service.save).not.toHaveBeenCalled();
+  });
   it("prevents duplicate saves and cancellation while saving", async () => {
     const service = api();
     let finish!: (value: SettingsView) => void;

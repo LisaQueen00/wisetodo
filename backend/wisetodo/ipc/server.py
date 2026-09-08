@@ -34,7 +34,7 @@ async def dispatch(
     if request.method in SETTINGS_METHODS:
         if settings_service is None:
             raise RuntimeError("Settings service is not initialized")
-        return dispatch_settings(request, settings_service)
+        return await dispatch_settings(request, settings_service)
     if request.method in METHODS:
         if session_service is None:
             raise RuntimeError("Session service is not initialized")

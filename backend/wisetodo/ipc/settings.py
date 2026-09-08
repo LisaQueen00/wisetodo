@@ -2,10 +2,11 @@ from typing import Any
 
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.messages import IpcRequest
+from wisetodo.model.connection import check_connection
 from wisetodo.settings import SettingsService, SettingsUpdate, SettingsView
 from wisetodo.settings.storage import SettingsStorageError
 
-METHODS = frozenset({"settings.get", "user.settings.save"})
+METHODS = frozenset({"settings.get", "user.settings.save", "user.settings.test"})
 
 
 class SettingsRequestError(Exception):
@@ -14,10 +15,14 @@ class SettingsRequestError(Exception):
         super().__init__(error.message)
 
 
-def dispatch_settings(request: IpcRequest, service: SettingsService) -> dict[str, Any]:
+async def dispatch_settings(request: IpcRequest, service: SettingsService) -> dict[str, Any]:
     writing = request.method == "user.settings.save"
     result: SettingsView | None
     try:
+        if request.method == "user.settings.test":
+            if request.params:
+                raise ValueError("Unexpected parameters")
+            return {"connection_test": await check_connection(service)}
         if writing:
             if set(request.params) != {"settings"}:
                 raise ValueError("Unexpected parameters")
