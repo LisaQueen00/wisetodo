@@ -2,9 +2,12 @@ import { TodoWorkspace } from "./todos/TodoWorkspace";
 import type { LoadTodos, TodoMutations } from "./todos/types";
 import { SessionPanel } from "./sessions/SessionPanel";
 import type { SessionApi } from "./sessions/types";
+import { SettingsPanel } from "./settings/SettingsPanel";
+import type { SettingsApi } from "./settings/desktop";
 
-function App({ loadTodos, mutations, preview = false, sessionApi }: {
+function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi }: {
   loadTodos?: LoadTodos; mutations?: TodoMutations; preview?: boolean; sessionApi?: SessionApi;
+  settingsApi?: SettingsApi;
 }) {
   return (
     <main className="grid h-dvh min-h-[520px] grid-cols-[minmax(0,3fr)_minmax(0,2fr)] overflow-hidden bg-[var(--surface-window)] text-[var(--text-primary)]">
@@ -28,7 +31,7 @@ function App({ loadTodos, mutations, preview = false, sessionApi }: {
       </section>
 
       <aside aria-label="Chat 工作区" className="flex min-h-0 min-w-0 flex-col p-5">
-        <h2 className="mb-5 shrink-0 text-sm font-medium text-white/70">Chat</h2>
+        {settingsApi ? <SettingsPanel api={settingsApi} /> : <h2 className="mb-5 shrink-0 text-sm font-medium text-white/70">Chat</h2>}
         {sessionApi ? <SessionPanel api={sessionApi} /> : <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-dashed border-white/15 p-6 text-sm leading-7 text-white/50">
           从一个想做的事情开始。<br />对话功能接入后，可以在这里讨论并创建任务。
         </div>}
