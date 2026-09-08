@@ -89,8 +89,14 @@ export function SessionPanel({ api }: { api: SessionApi }) {
         <h3 className="text-white">{active.label || "新会话"}</h3>
         <p className="mt-2">状态：{labels[active.status]}</p>
         <p>已加载 {active.messages.length} 条消息、{active.tool_events.length} 条工具事件。</p>
-        <p className="mt-3">消息展示与发送功能待接入。</p>
+        {active.status === "completed"
+          ? <p role="status" className="mt-3 rounded-lg bg-white/5 p-3">此会话已完成，只读；如需继续，请新建会话。</p>
+          : <p className="mt-3">消息展示与发送功能待接入。</p>}
       </> : <p>新建会话，或点击历史会话加载；不会自动恢复上次对话。</p>}
     </div>
+    <textarea disabled readOnly={active?.status === "completed"}
+      aria-label={active?.status === "completed" ? "聊天输入（会话已完成，只读）" : "聊天输入（待接入）"}
+      placeholder={active?.status === "completed" ? "此会话已完成，请新建会话" : "聊天功能待接入"} rows={3}
+      className="mt-4 w-full shrink-0 resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm placeholder:text-white/30" />
   </>;
 }

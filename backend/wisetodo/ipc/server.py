@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.messages import IpcCancel, IpcFailure, IpcRequest, IpcResponse
 from wisetodo.ipc.sessions import METHODS, SessionRequestError, dispatch_session
-from wisetodo.sessions.service import SessionService
+from wisetodo.sessions.service import SessionReadOnlyError, SessionService
 from wisetodo.todos import TodoCaller, TodoService
 from wisetodo.todos.models import TodoEdit, TodoInput
 
@@ -122,6 +122,12 @@ async def run_stdio_server(
             result = await dispatch(message, todo_service, session_service)
         except SessionRequestError as failure:
             error = failure.error
+        except SessionReadOnlyError:
+            error = WiseTodoError(
+                code=ErrorCode.SESSION_READ_ONLY,
+                message="Completed Session is read-only",
+                user_message="此会话已完成，只能查看历史；如需继续，请新建会话。",
+            )
         except UnknownMethodError:
             error = WiseTodoError(
                 code=ErrorCode.IPC_METHOD_NOT_FOUND,

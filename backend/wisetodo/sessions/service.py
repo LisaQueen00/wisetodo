@@ -1,8 +1,17 @@
-from sqlalchemy import select
+from collections.abc import Iterator
+from contextlib import contextmanager
+
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from wisetodo.sessions.models import SessionHistory, SessionStatus, SessionSummary
 from wisetodo.sessions.tables import SessionRecord
+
+
+class SessionReadOnlyError(PermissionError):
+    def __init__(self, session_id: str) -> None:
+        self.session_id = session_id
+        super().__init__("Completed Sessions are read-only; create a new Session")
 
 
 class SessionService:
@@ -41,6 +50,31 @@ class SessionService:
                 )
             )
             return SessionHistory.model_validate(record) if record is not None else None
+
+    @contextmanager
+    def write_history(self, session_id: str) -> Iterator[SessionRecord]:
+        """Transaction boundary for future message/event and lifecycle writers.
+
+        Acquire SQLite's write lock before checking status, so a concurrent completion
+        cannot slip between the check and the write. No-op updates preserve timestamps.
+        Callers still enforce lifecycle transitions and run IDs; this only guards the
+        successful terminal state. Deleting an entire Session is intentionally separate.
+        """
+        with self._sessions.begin() as session:
+            result = session.execute(
+                update(SessionRecord)
+                .where(
+                    SessionRecord.id == session_id, SessionRecord.status != SessionStatus.COMPLETED
+                )
+                .values(status=SessionRecord.status, updated_at=SessionRecord.updated_at)
+                .returning(SessionRecord.id)
+            )
+            if result.scalar_one_or_none() is None:
+                if session.get(SessionRecord, session_id) is None:
+                    raise LookupError("Session not found")
+                raise SessionReadOnlyError(session_id)
+            record = session.get_one(SessionRecord, session_id)
+            yield record
 
     def delete(self, session_id: str) -> bool:
         with self._sessions.begin() as session:

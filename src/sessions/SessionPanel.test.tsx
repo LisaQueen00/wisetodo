@@ -65,3 +65,25 @@ it("retries failed list reads and does not delete running Sessions", async () =>
   expect(screen.getByLabelText("删除会话 First")).toBeDisabled();
   expect(service.delete).not.toHaveBeenCalled();
 });
+
+it("marks completed history read-only while allowing deletion and a new independent Session", async () => {
+  const service = api();
+  const completed: SessionHistory = { ...first, status: "completed" };
+  vi.mocked(service.list).mockResolvedValue([completed]);
+  vi.mocked(service.get).mockResolvedValue(completed);
+  render(<SessionPanel api={service} />);
+  fireEvent.click(await screen.findByRole("button", { name: "First已完成" }));
+  await screen.findByRole("heading", { name: "First" });
+  expect(screen.getByText("此会话已完成，只读；如需继续，请新建会话。")).toBeInTheDocument();
+  const input = screen.getByRole("textbox", { name: "聊天输入（会话已完成，只读）" });
+  expect(input).toBeDisabled();
+  expect(input).toHaveAttribute("readonly");
+  expect(screen.getByRole("button", { name: "删除会话 First" })).toBeEnabled();
+  expect(screen.queryByRole("button", { name: "发送" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "重试" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
+  await screen.findByRole("heading", { name: "新会话" });
+  expect(screen.queryByText("此会话已完成，只读；如需继续，请新建会话。")).not.toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: "聊天输入（待接入）" })).not.toHaveAttribute("readonly");
+  expect(screen.getByRole("button", { name: "First已完成" })).toBeInTheDocument();
+});

@@ -32,8 +32,8 @@ function App({ loadTodos, mutations, preview = false, sessionApi }: {
         {sessionApi ? <SessionPanel api={sessionApi} /> : <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-dashed border-white/15 p-6 text-sm leading-7 text-white/50">
           从一个想做的事情开始。<br />对话功能接入后，可以在这里讨论并创建任务。
         </div>}
-        <textarea disabled aria-label="聊天输入（待接入）" placeholder="聊天功能待接入" rows={3}
-          className="mt-4 w-full shrink-0 resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm placeholder:text-white/30" />
+        {!sessionApi && <textarea disabled aria-label="聊天输入（待接入）" placeholder="聊天功能待接入" rows={3}
+          className="mt-4 w-full shrink-0 resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm placeholder:text-white/30" />}
       </aside>
     </main>
   );
