@@ -1,1 +1,1 @@
-"""Session state and history services."""
+"""Session history persistence; lifecycle services are implemented separately."""

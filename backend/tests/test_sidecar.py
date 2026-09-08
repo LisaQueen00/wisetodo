@@ -43,6 +43,9 @@ def test_runtime_migrates_nested_database_idempotently(tmp_path: Path) -> None:
             "alembic_version",
             "todos",
             "todo_items",
+            "sessions",
+            "messages",
+            "tool_events",
         }
     finally:
         database.dispose()
@@ -53,7 +56,7 @@ def test_runtime_migrates_nested_database_idempotently(tmp_path: Path) -> None:
         with reopened.engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0002_create_todo_tables"
+                == "0003_create_session_tables"
             )
     finally:
         reopened.dispose()
