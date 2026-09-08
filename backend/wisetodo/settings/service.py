@@ -13,7 +13,7 @@ class SettingsStore(Protocol):
 
     replace must publish a complete configuration or leave the previous one intact.
     Implementations must not serialize ResolvedSettings as a credential file.
-    The next task supplies persistent settings and system credential adapters.
+    FileSettingsStore supplies persistent settings and system credential adapters.
     """
 
     def load(self) -> ResolvedSettings | None: ...
@@ -32,7 +32,8 @@ class SettingsService:
         return None if settings is None else self._view(settings)
 
     def save(self, update: SettingsUpdate) -> SettingsView:
-        previous = self._store.load()
+        # Explicit replacement/clear must also work if an old credential was lost.
+        previous = self._store.load() if update.key_action == "keep" else None
         key = previous.api_key if previous is not None else None
         if (
             previous is not None

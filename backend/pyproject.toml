@@ -10,6 +10,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "alembic>=1.16,<2",
   "httpx>=0.28,<1",
+  "keyring>=25.6,<26",
   "langchain-openai>=0.3,<2",
   "langgraph>=1,<2",
   "mcp>=2,<3",
