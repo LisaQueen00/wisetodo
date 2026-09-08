@@ -8,6 +8,7 @@ from uuid import uuid4
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, object_session, selectinload, sessionmaker
 
+from wisetodo.ipc.events import emit_run
 from wisetodo.sessions.models import ChatInput, SessionHistory, SessionStatus, SessionSummary
 from wisetodo.sessions.retry import (
     RetryExecutionError,
@@ -33,6 +34,35 @@ class SessionService:
         self._sessions = sessions
         self._retry_executor = retry_executor
         self._active_retries: dict[str, str] = {}
+        self._run_tasks: dict[str, asyncio.Task[object]] = {}
+
+    def cancel(self, session_id: str, run_id: str) -> bool:
+        if self._active_retries.get(session_id) != run_id:
+            return False
+        task = self._run_tasks.get(run_id)
+        if task is None or task.done() or task.cancelling():
+            return False
+        task.cancel()
+        return True
+
+    def recover_interrupted(self) -> int:
+        """Call once before accepting IPC in a new single-owner sidecar."""
+        with self._sessions.begin() as session:
+            records = session.scalars(
+                select(SessionRecord).where(SessionRecord.status == SessionStatus.RUNNING)
+            ).all()
+            for record in records:
+                record.status = SessionStatus.FAILED
+                record.updated_at = datetime.now(UTC)
+                record.messages.append(
+                    MessageRecord(
+                        role="system",
+                        content="上次执行因程序退出而中断，未自动重试，请检查任务后重试。",
+                        attachments=[],
+                        position=max((m.position for m in record.messages), default=-1) + 1,
+                    )
+                )
+            return len(records)
 
     async def retry(self, session_id: str) -> SessionHistory:
         run_id = str(uuid4())
@@ -48,9 +78,15 @@ class SessionService:
             record.status = target
             record.updated_at = datetime.now(UTC)
         self._active_retries[session_id] = run_id
+        task = asyncio.current_task()
+        if task is not None:
+            self._run_tasks[run_id] = task
         try:
+            emit_run("run.started", session_id, run_id)
             try:
                 outcome = await self._retry_executor(RetryRequest(run_id=run_id, history=history))
+                if task is not None and task.cancelling():
+                    raise asyncio.CancelledError
                 outcome = RetryOutcome.model_validate(outcome)
             except asyncio.CancelledError:
                 self._finish_retry(session_id, run_id, SessionEvent.CANCEL)
@@ -64,8 +100,10 @@ class SessionService:
                 raise LookupError("Session not found")
             return result
         finally:
+            self._run_tasks.pop(run_id, None)
             if self._active_retries.get(session_id) == run_id:
                 del self._active_retries[session_id]
+            emit_run("run.finished", session_id, run_id)
 
     def _finish_retry(self, session_id: str, run_id: str, event: SessionEvent) -> None:
         if self._active_retries.get(session_id) != run_id:

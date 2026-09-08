@@ -1,15 +1,17 @@
 use std::{
-    io::{BufRead, BufReader, Read, Write},
+    io::{BufRead, BufReader, Read},
     path::{Path, PathBuf},
-    process::{Child, ChildStdin, Command, Stdio},
-    sync::{atomic::{AtomicBool, Ordering}, mpsc, Mutex},
+    process::{Child, Command, Stdio},
+    sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex},
     thread,
-    time::{Duration, Instant},
 };
+
+#[cfg(test)]
+use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
 
-const RESPONSE_TIMEOUT: Duration = Duration::from_secs(30);
+use crate::transport::{Transport, EventSink};
 const MAX_RESPONSE_BYTES: u64 = 16 * 1024 * 1024;
 
 // Only the Rust application owns this path and process. Neither is provided by the UI.
@@ -17,6 +19,7 @@ pub struct TodoBackend {
     database_path: PathBuf,
     process: Mutex<Option<Sidecar>>,
     stopping: AtomicBool,
+    events: Option<EventSink>,
 }
 
 impl TodoBackend {
@@ -25,7 +28,18 @@ impl TodoBackend {
             database_path,
             process: Mutex::new(None),
             stopping: AtomicBool::new(false),
+            events: None,
         }
+    }
+
+    pub fn with_events(database_path: PathBuf, events: EventSink) -> Self {
+        let mut backend = Self::new(database_path);
+        backend.events = Some(events);
+        backend
+    }
+
+    pub fn sessions_cancel(&self, session_id: String, run_id: String) -> Result<Value, String> {
+        self.call("user.sessions.cancel", json!({"session_id":session_id,"run_id":run_id}))
     }
 
     pub fn list(&self) -> Result<Value, String> {
@@ -94,15 +108,19 @@ impl TodoBackend {
             return Err("Todo 服务正在关闭".into());
         }
         if slot.is_none() {
-            *slot = Some(Sidecar::start(&self.database_path)?);
+            *slot = Some(Sidecar::start(&self.database_path, self.events.clone())?);
         }
-        let result = slot
-            .as_mut()
-            .expect("sidecar initialized")
-            .request(method, params, &self.stopping);
-        // A failed/timed-out connection must not be reused: its next line may be stale.
-        if result.is_err() {
-            slot.take();
+        let transport = Arc::clone(&slot.as_ref().expect("sidecar initialized").transport);
+        drop(slot); // Do not hold the process lock while waiting for model responses.
+        let result = transport.request(method, params, &self.stopping)
+            .and_then(|line| {
+                let value: Value = serde_json::from_str(&line).map_err(|_| "无效后端响应")?;
+                decode_response(&line, value["requestId"].as_str().unwrap_or(""))
+            });
+        if !transport.alive.load(Ordering::Acquire) {
+            if let Ok(mut slot) = self.process.lock() {
+                if slot.as_ref().is_some_and(|s| Arc::ptr_eq(&s.transport, &transport)) { slot.take(); }
+            }
         }
         result
     }
@@ -159,19 +177,20 @@ fn sidecar_command() -> Result<Command, String> {
 
 struct Sidecar {
     child: Child,
-    input: ChildStdin,
-    responses: mpsc::Receiver<Result<String, String>>,
-    next_id: u64,
+    transport: Arc<Transport>,
 }
 
 impl Sidecar {
-    fn start(database_path: &Path) -> Result<Self, String> {
+    fn start(database_path: &Path, events: Option<EventSink>) -> Result<Self, String> {
         let mut command = sidecar_command()?;
         command.arg("--database").arg(database_path);
-        Self::spawn(command)
+        Self::spawn_with_events(command, events)
     }
 
-    fn spawn(mut command: Command) -> Result<Self, String> {
+    #[cfg(test)]
+    fn spawn(command: Command) -> Result<Self, String> { Self::spawn_with_events(command, None) }
+
+    fn spawn_with_events(mut command: Command, events: Option<EventSink>) -> Result<Self, String> {
         command.env("PYTHONIOENCODING", "utf-8");
         command
             .stdin(Stdio::piped())
@@ -185,7 +204,8 @@ impl Sidecar {
         let mut child = command.spawn().map_err(|_| "无法启动 Python Todo 服务")?;
         let input = child.stdin.take().expect("piped stdin");
         let output = child.stdout.take().expect("piped stdout");
-        let (sender, responses) = mpsc::sync_channel(1);
+        let transport = Arc::new(Transport::new(input, events));
+        let reader_transport = Arc::clone(&transport);
         thread::spawn(move || {
             let mut reader = BufReader::new(output);
             loop {
@@ -194,7 +214,7 @@ impl Sidecar {
                     .by_ref()
                     .take(MAX_RESPONSE_BYTES + 1)
                     .read_until(b'\n', &mut bytes);
-                let response = match read {
+                let response: Result<String, String> = match read {
                     Ok(0) => Err("Python Todo 服务已退出，请重试".into()),
                     Ok(_) if bytes.len() as u64 > MAX_RESPONSE_BYTES => {
                         Err("Todo 响应超过大小限制".into())
@@ -203,51 +223,23 @@ impl Sidecar {
                         .map_err(|_| "Todo 服务返回了无效 UTF-8".into()),
                     Err(_) => Err("无法读取 Python Todo 服务响应".into()),
                 };
-                let failed = response.is_err();
-                if sender.send(response).is_err() || failed {
-                    break;
+                match response {
+                    Ok(line) => { if !reader_transport.deliver(line) { reader_transport.fail(); break; } },
+                    _ => { reader_transport.fail(); break; }
                 }
             }
         });
         Ok(Self {
             child,
-            input,
-            responses,
-            next_id: 0,
+            transport,
         })
     }
 
-    fn request(&mut self, method: &str, params: Value, stopping: &AtomicBool) -> Result<Value, String> {
-        self.next_id += 1;
-        let request_id = format!("todo-{}", self.next_id);
-        let request = json!({
-            "type": "request", "requestId": request_id, "method": method, "params": params
-        });
-        writeln!(self.input, "{request}")
-            .and_then(|_| self.input.flush())
-            .map_err(|_| "无法发送 Todo 读取请求，请重试")?;
-        let deadline = Instant::now() + RESPONSE_TIMEOUT;
-        loop {
-            if stopping.load(Ordering::Acquire) {
-                return Err("Todo 服务正在关闭".into());
-            }
-            let remaining = deadline.saturating_duration_since(Instant::now());
-            if remaining.is_zero() {
-                return Err("Todo 服务响应超时，请重试".into());
-            }
-            match self.responses.recv_timeout(remaining.min(Duration::from_millis(100))) {
-                Ok(response) => return decode_response(&response?, &request_id),
-                Err(mpsc::RecvTimeoutError::Timeout) => continue,
-                Err(mpsc::RecvTimeoutError::Disconnected) => {
-                    return Err("Todo 服务已断开，请重试".into());
-                }
-            }
-        }
-    }
 }
 
 impl Drop for Sidecar {
     fn drop(&mut self) {
+        self.transport.fail();
         let _ = self.child.kill();
         let _ = self.child.wait();
     }
@@ -268,7 +260,7 @@ fn decode_response(line: &str, request_id: &str) -> Result<Value, String> {
     if !(result["todos"].is_array() || result["todo"].is_object() || result["deleted"].is_boolean()
         || result["sessions"].is_array() || result["session"].is_object()
         || result.get("settings").is_some_and(|value| value.is_null() || value.is_object())
-        || result["connection_test"].is_string()) {
+        || result["connection_test"].is_string() || result["cancelled"].is_boolean()) {
         return Err("Todo 服务响应缺少结果数据".into());
     }
     Ok(result.clone())
@@ -277,6 +269,41 @@ fn decode_response(line: &str, request_id: &str) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[cfg(debug_assertions)]
+    fn concurrent_responses_events_and_cancellation() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let python = root.join(if cfg!(windows) { ".venv/Scripts/python.exe" } else { ".venv/bin/python" });
+        let script = r#"
+import sys,json
+pending=None
+def reply(req,result):
+ print(json.dumps({'type':'response','requestId':req['requestId'],'result':result}),flush=True)
+for line in sys.stdin:
+ req=json.loads(line)
+ if req['method']=='user.sessions.retry':
+  pending=req
+  print(json.dumps({'type':'event','requestId':req['requestId'],'event':'run.started','session_id':'s','run_id':'r'}),flush=True)
+ elif req['method']=='user.sessions.cancel':
+  reply(req,{'cancelled':True})
+  reply(pending,{'session':{}})
+ else: reply(req,{'todos':[]})
+"#;
+        let mut command = Command::new(python);
+        command.args(["-u", "-c", script]);
+        let (sender, events) = std::sync::mpsc::channel();
+        let backend = Arc::new(TodoBackend::new(PathBuf::new()));
+        *backend.process.lock().unwrap() = Some(Sidecar::spawn_with_events(command,
+            Some(Arc::new(move |event| { let _ = sender.send(event); }))).unwrap());
+        let worker = Arc::clone(&backend);
+        let running = thread::spawn(move || worker.sessions_retry("s".into()));
+        assert_eq!(events.recv_timeout(Duration::from_secs(3)).unwrap()["run_id"], "r");
+        assert_eq!(backend.list().unwrap(), json!({"todos":[]}));
+        assert_eq!(backend.sessions_cancel("s".into(), "r".into()).unwrap(), json!({"cancelled":true}));
+        assert_eq!(running.join().unwrap().unwrap(), json!({"session":{}}));
+        backend.shutdown();
+    }
 
     #[test]
     fn decodes_success_and_errors_and_rejects_mismatched_ids() {
@@ -300,7 +327,7 @@ mod tests {
         struct Cleanup(PathBuf);
         impl Drop for Cleanup {
             fn drop(&mut self) {
-                for name in ["wisetodo.db", "wisetodo.db-wal", "wisetodo.db-shm", "wisetodo.db-journal"] {
+                for name in ["wisetodo.db", "wisetodo.db-wal", "wisetodo.db-shm", "wisetodo.db-journal", "model-settings.json"] {
                     let _ = std::fs::remove_file(self.0.join(name));
                 }
                 let _ = std::fs::remove_dir(&self.0);

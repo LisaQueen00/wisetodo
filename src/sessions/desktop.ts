@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import type { SessionApi, SessionHistory, SessionSummary } from "./types";
 
@@ -29,6 +30,19 @@ function history(result: unknown): SessionHistory {
   return value as unknown as SessionHistory;
 }
 export const desktopSessionApi: SessionApi = {
+  async listenRuns(handler) {
+    return listen<unknown>("wisetodo:run", ({ payload }) => {
+      if (object(payload) && (payload.event === "run.started" || payload.event === "run.finished")
+        && typeof payload.session_id === "string" && typeof payload.run_id === "string") {
+        handler({ event: payload.event, session_id: payload.session_id, run_id: payload.run_id });
+      }
+    });
+  },
+  async cancel(sessionId, runId) {
+    const result = await invoke<unknown>("sessions_cancel", { sessionId, runId });
+    if (!object(result) || typeof result.cancelled !== "boolean") throw new Error("Invalid cancellation response");
+    return result.cancelled;
+  },
   async listenFileDrops(handler) {
     return getCurrentWebview().onDragDropEvent(({ payload }) => {
       if (payload.type === "drop") handler(payload.paths, payload.position.x / window.devicePixelRatio, payload.position.y / window.devicePixelRatio);

@@ -9,6 +9,7 @@ from pydantic import TypeAdapter, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 from wisetodo.errors import ErrorCode, WiseTodoError
+from wisetodo.ipc.events import request_id
 from wisetodo.ipc.messages import IpcCancel, IpcFailure, IpcRequest, IpcResponse
 from wisetodo.ipc.sessions import METHODS, SessionRequestError, dispatch_session
 from wisetodo.ipc.settings import METHODS as SETTINGS_METHODS
@@ -117,19 +118,22 @@ async def run_stdio_server(
     session_service: SessionService | None = None,
     settings_service: SettingsService | None = None,
 ) -> None:
-    """Read one JSON request per line and emit one JSON response per line."""
-    while line := await asyncio.to_thread(sys.stdin.readline):
-        try:
-            message = IncomingMessage.validate_json(line)
-        except ValidationError:
-            _handle_invalid_request(line)
-            continue
+    """Short operations stay ordered; awaited long calls do not block input."""
+    tasks: dict[str, asyncio.Task[None]] = {}
 
-        if isinstance(message, IpcCancel):
-            continue
+    def forget(done: asyncio.Task[None]) -> None:
+        tasks.pop(done.get_name(), None)
 
+    async def handle(message: IpcRequest) -> None:
+        request_id.set(message.request_id)
         try:
             result = await dispatch(message, todo_service, session_service, settings_service)
+        except asyncio.CancelledError:
+            error = WiseTodoError(
+                code=ErrorCode.RUN_CANCELLED,
+                message="Request cancelled",
+                user_message="已停止执行。",
+            )
         except (SessionRequestError, SettingsRequestError) as failure:
             error = failure.error
         except SessionReadOnlyError:
@@ -186,6 +190,37 @@ async def run_stdio_server(
         else:
             response = IpcResponse(requestId=message.request_id, result=result)
             print(response.model_dump_json(by_alias=True), flush=True)
-            continue
+            return
 
         _write_failure(message.request_id, error)
+
+    try:
+        while line := await asyncio.to_thread(sys.stdin.readline):
+            try:
+                message = IncomingMessage.validate_json(line)
+            except ValidationError:
+                _handle_invalid_request(line)
+                continue
+            if isinstance(message, IpcCancel):
+                task = tasks.get(message.request_id)
+                if task is not None and not task.cancelling():
+                    task.cancel()
+                continue
+            if message.request_id in tasks:
+                # Do not emit a second terminal response for the same in-flight ID.
+                print("Ignored duplicate active IPC request ID", file=sys.stderr, flush=True)
+                continue
+            if message.method in {"user.sessions.retry", "user.settings.test"}:
+                task = asyncio.create_task(handle(message), name=message.request_id)
+                tasks[message.request_id] = task
+                task.add_done_callback(forget)
+                # Enter cancellation handling before the next input can cancel it.
+                await asyncio.sleep(0)
+            else:
+                await handle(message)
+    finally:
+        pending = list(tasks.values())
+        for task in pending:
+            if not task.cancelling():
+                task.cancel()
+        await asyncio.gather(*pending, return_exceptions=True)

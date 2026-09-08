@@ -16,6 +16,7 @@ METHODS = frozenset(
         "user.sessions.delete",
         "user.sessions.retry",
         "user.sessions.send",
+        "user.sessions.cancel",
     }
 )
 
@@ -40,6 +41,11 @@ async def dispatch_session(request: IpcRequest, service: SessionService) -> dict
             raise ValueError("Missing Session ID")
         if request.method == "user.sessions.delete":
             return {"deleted": service.delete(session_id)}
+        if request.method == "user.sessions.cancel":
+            run_id = request.params.get("run_id")
+            if not isinstance(run_id, str) or not run_id:
+                raise ValueError("Missing run ID")
+            return {"cancelled": service.cancel(session_id, run_id)}
         if request.method == "user.sessions.retry":
             return {"session": (await service.retry(session_id)).model_dump(mode="json")}
         if request.method == "user.sessions.send":

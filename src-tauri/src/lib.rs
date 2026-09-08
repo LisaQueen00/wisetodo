@@ -1,7 +1,8 @@
 mod sidecar;
+mod transport;
 
 use std::sync::Arc;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 #[tauri::command]
 async fn todos_list(
@@ -135,6 +136,13 @@ async fn settings_test(backend: tauri::State<'_, Arc<sidecar::TodoBackend>>) -> 
         .await.map_err(|_| "连接测试异常终止".to_owned())?
 }
 
+#[tauri::command]
+async fn sessions_cancel(backend: tauri::State<'_, Arc<sidecar::TodoBackend>>, session_id: String, run_id: String) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.sessions_cancel(session_id, run_id))
+        .await.map_err(|_| "取消请求异常终止".to_owned())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -149,10 +157,13 @@ pub fn run() {
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .setup(|app| {
             let database_path = app.path().app_data_dir()?.join("wisetodo.db");
-            app.manage(Arc::new(sidecar::TodoBackend::new(database_path)));
+            let handle = app.handle().clone();
+            app.manage(Arc::new(sidecar::TodoBackend::with_events(database_path, Arc::new(move |event| {
+                let _ = handle.emit("wisetodo:run", event);
+            }))));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![health, todos_list, todos_create, todos_update, todos_delete, todos_set_item_completed, todos_move, sessions_list, sessions_get, sessions_create, sessions_delete, sessions_retry, sessions_send, settings_get, settings_save, settings_test])
+        .invoke_handler(tauri::generate_handler![health, todos_list, todos_create, todos_update, todos_delete, todos_set_item_completed, todos_move, sessions_list, sessions_get, sessions_create, sessions_delete, sessions_retry, sessions_send, sessions_cancel, settings_get, settings_save, settings_test])
         .build(tauri::generate_context!())
         .expect("error while building WiseTodo")
         .run(|app, event| {

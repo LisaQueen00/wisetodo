@@ -13,6 +13,8 @@ export interface ToolEvent {
 }
 export interface SessionHistory extends SessionSummary { messages: Message[]; tool_events: ToolEvent[] }
 export interface SessionApi {
+  listenRuns?: (handler: (event: RunEvent) => void) => Promise<() => void>;
+  cancel?: (sessionId: string, runId: string) => Promise<boolean>;
   listenFileDrops?: (handler: (paths: string[], x: number, y: number) => void) => Promise<() => void>;
   send: (id: string, messageId: string, content: string, urls?: string[], files?: string[]) => Promise<SessionHistory>;
   retry: (id: string) => Promise<SessionHistory>;
@@ -21,3 +23,5 @@ export interface SessionApi {
   create: (label: string) => Promise<SessionHistory>;
   delete: (id: string) => Promise<boolean>;
 }
+
+export interface RunEvent { event: "run.started" | "run.finished"; session_id: string; run_id: string }

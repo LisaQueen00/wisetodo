@@ -34,10 +34,12 @@ def main() -> None:
         raise SystemExit(1) from None
 
     try:
+        session_service = SessionService(database.sessions)
+        session_service.recover_interrupted()
         asyncio.run(
             run_stdio_server(
                 TodoService(database.sessions),
-                SessionService(database.sessions),
+                session_service,
                 SettingsService(
                     DevelopmentSettingsStore(
                         create_settings_store(args.database.parent),

@@ -4,6 +4,7 @@ import { ChatMessages } from "./ChatMessages";
 import { SessionStages } from "./SessionStages";
 import { UrlAttachments } from "./UrlAttachments";
 import { useFileDrops } from "./useFileDrops";
+import { RunControl } from "./RunControl";
 
 const labels: Record<SessionStatus, string> = {
   ready: "待开始", running: "执行中", waiting_input: "等待补充", completed: "已完成", failed: "失败", cancelled: "已停止",
@@ -15,6 +16,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);
   const [mutating, setMutating] = useState(false);
+  const [runEventsReady, setRunEventsReady] = useState(!api.listenRuns);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [listReady, setListReady] = useState(false);
@@ -100,6 +102,16 @@ export function SessionPanel({ api }: { api: SessionApi }) {
         }
       }
     } catch (failure) {
+      if (kind === "retry" && id && ticket === request.current) {
+        try {
+          const history = await api.get(id);
+          if (ticket === request.current) {
+            setActive(history);
+            setRows((previous) => previous.map((row) => row.id === id ? history : row));
+            if (history.status === "cancelled" && failure === "已停止执行。") { setError(""); setNotice("已停止执行。"); return; }
+          }
+        } catch { /* Keep the original safe retry error below. */ }
+      }
       if (ticket === request.current) setError(kind === "send"
         ? (typeof failure === "string" ? failure : "消息保存失败，输入已保留，请重试发送。") : kind === "retry"
         ? (typeof failure === "string" ? failure : "重试失败，请刷新历史检查会话状态。")
@@ -109,6 +121,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
   }
 
   return <>
+    <RunControl api={api} executing={mutating} onReady={setRunEventsReady} />
     <form className="mb-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); void change("create"); }}>
       <input aria-label="会话标签" placeholder="会话标签（可留空）" value={label} disabled={busy || !listReady}
         onChange={(event) => setLabel(event.target.value)} className="min-w-0 flex-1 rounded-lg bg-white/5 p-2 text-sm" />
@@ -136,7 +149,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
         <p className="mt-2">状态：{labels[active.status]}</p>
         <p>已加载 {active.messages.length} 条消息、{active.tool_events.length} 条工具事件。</p>
         {(active.status === "failed" || active.status === "cancelled") && <div className="mt-3">
-          <button disabled={busy || !listReady} onClick={() => { void change("retry", active.id); }}
+          <button disabled={busy || !listReady || !runEventsReady} onClick={() => { void change("retry", active.id); }}
             className="rounded-lg bg-white/10 px-3 py-2 disabled:opacity-30">重试</button>
           <p className="mt-2 text-xs text-white/50">复用原输入和附件。当前执行器尚未接入，暂不能实际执行。</p>
         </div>}
