@@ -28,6 +28,11 @@ function history(result: unknown): SessionHistory {
   return value as unknown as SessionHistory;
 }
 export const desktopSessionApi: SessionApi = {
+  async send(sessionId, messageId, content) {
+    const result = history(await invoke("sessions_send", { sessionId, message: { message_id: messageId, content } }));
+    if (result.id !== sessionId) throw new Error("Mismatched Session ID");
+    return result;
+  },
   async retry(sessionId) {
     const result = history(await invoke("sessions_retry", { sessionId }));
     if (result.id !== sessionId) throw new Error("Mismatched Session ID");

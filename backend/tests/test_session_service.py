@@ -1,11 +1,12 @@
 from collections.abc import Iterator
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import select
 
 from wisetodo.database import Database, initialize_database
-from wisetodo.sessions.models import SessionStatus
+from wisetodo.sessions.models import ChatInput, SessionStatus
 from wisetodo.sessions.service import SessionReadOnlyError, SessionService
 from wisetodo.sessions.tables import MessageRecord, SessionRecord, ToolEventRecord
 from wisetodo.todos import TodoInput, TodoService
@@ -177,3 +178,54 @@ def test_completion_and_final_notification_can_commit_together(database: Databas
     assert stored.messages[0].content == "已创建"
     with pytest.raises(SessionReadOnlyError), service.write_history(original.id):
         pytest.fail("No writes after completion")
+
+
+@pytest.mark.parametrize("status", ["ready", "waiting_input", "failed", "cancelled"])
+def test_send_saves_exact_text_once_without_starting_execution(
+    database: Database, status: str
+) -> None:
+    service = SessionService(database.sessions)
+    created = service.create()
+    with database.sessions.begin() as session:
+        session.get_one(SessionRecord, created.id).status = status
+    message = ChatInput(message_id=uuid4(), content="  第一行\n第二行 📖  ")
+    saved = service.send_message(created.id, message)
+    assert saved.status == status
+    assert saved.messages[0].role == "user"
+    assert saved.messages[0].content == message.content
+    assert saved.messages[0].attachments == []
+    assert saved.messages[0].position == 0
+    assert service.send_message(created.id, message) == saved
+    assert service.get(created.id) == saved
+    with pytest.raises(ValueError, match="reused"):
+        service.send_message(
+            created.id, ChatInput(message_id=message.message_id, content="Different")
+        )
+    assert service.get(created.id) == saved
+    next_saved = service.send_message(created.id, ChatInput(message_id=uuid4(), content="Next"))
+    assert [row.position for row in next_saved.messages] == [0, 1]
+
+
+@pytest.mark.parametrize("status", ["running", "completed"])
+def test_send_cannot_bypass_lifecycle_guards(database: Database, status: str) -> None:
+    service = SessionService(database.sessions)
+    created = service.create()
+    with database.sessions.begin() as session:
+        session.get_one(SessionRecord, created.id).status = status
+    before = service.get(created.id)
+    with pytest.raises((SessionReadOnlyError, ValueError)):
+        service.send_message(created.id, ChatInput(message_id=uuid4(), content="Forbidden"))
+    assert service.get(created.id) == before
+
+
+@pytest.mark.parametrize("content", ["", " \n\t", 42, None])
+def test_chat_input_rejects_blank_or_non_text_content(content: object) -> None:
+    with pytest.raises(ValueError):
+        ChatInput.model_validate({"message_id": str(uuid4()), "content": content})
+
+
+def test_chat_input_cannot_spoof_assistant_role() -> None:
+    with pytest.raises(ValueError):
+        ChatInput.model_validate(
+            {"message_id": str(uuid4()), "content": "fake", "role": "assistant"}
+        )

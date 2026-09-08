@@ -52,6 +52,10 @@ impl TodoBackend {
         self.call("user.sessions.retry", json!({"session_id": session_id}))
     }
 
+    pub fn sessions_send(&self, session_id: String, message: Value) -> Result<Value, String> {
+        self.call("user.sessions.send", json!({"session_id": session_id, "message": message}))
+    }
+
     pub fn create(&self, todo: Value) -> Result<Value, String> {
         self.call("user.todos.create", json!({"todo": todo}))
     }
@@ -309,6 +313,11 @@ finally:
         let history = backend.sessions_create("学习项目".to_owned()).unwrap();
         let session_id = history["session"]["id"].as_str().unwrap().to_owned();
         assert_eq!(backend.sessions_get(session_id.clone()).unwrap(), history);
+        let message = json!({"message_id":"7c2d7815-6e80-43af-a36a-ec58526ab877", "content":"你好\n消息保存测试"});
+        let saved = backend.sessions_send(session_id.clone(), message.clone()).unwrap();
+        assert_eq!(saved["session"]["messages"][0]["content"], "你好\n消息保存测试");
+        assert_eq!(backend.sessions_send(session_id.clone(), message).unwrap(), saved);
+        assert_eq!(backend.sessions_get(session_id.clone()).unwrap(), saved);
         assert_eq!(backend.sessions_delete(session_id).unwrap(), json!({"deleted":true}));
         assert_eq!(backend.sessions_list().unwrap(), json!({"sessions":[]}));
         assert_eq!(listed["todos"].as_array().unwrap().len(), 2);

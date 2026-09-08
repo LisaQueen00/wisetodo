@@ -5,9 +5,9 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import select, update
-from sqlalchemy.orm import Session, selectinload, sessionmaker
+from sqlalchemy.orm import Session, object_session, selectinload, sessionmaker
 
-from wisetodo.sessions.models import SessionHistory, SessionStatus, SessionSummary
+from wisetodo.sessions.models import ChatInput, SessionHistory, SessionStatus, SessionSummary
 from wisetodo.sessions.retry import (
     RetryExecutionError,
     RetryExecutor,
@@ -15,8 +15,8 @@ from wisetodo.sessions.retry import (
     RetryRequest,
     RetryUnavailableError,
 )
-from wisetodo.sessions.state_machine import SessionEvent, next_status
-from wisetodo.sessions.tables import SessionRecord
+from wisetodo.sessions.state_machine import SessionEvent, capabilities, next_status
+from wisetodo.sessions.tables import MessageRecord, SessionRecord
 
 
 class SessionReadOnlyError(PermissionError):
@@ -81,6 +81,37 @@ class SessionService:
         with self._sessions.begin() as session:
             record = SessionRecord(label=label.strip())
             session.add(record)
+            session.flush()
+            session.refresh(record)
+            return SessionHistory.model_validate(record)
+
+    def send_message(self, session_id: str, message: ChatInput) -> SessionHistory:
+        """Save user input only; starting execution is a separate Runtime operation."""
+        with self.write_history(session_id) as record:
+            if not capabilities(SessionStatus(record.status)).can_submit:
+                raise ValueError("Session cannot accept user input")
+            existing = next(
+                (row for row in record.messages if row.id == str(message.message_id)), None
+            )
+            if existing is not None:
+                if (
+                    existing.role != "user"
+                    or existing.content != message.content
+                    or existing.attachments
+                ):
+                    raise ValueError("Message ID reused for different content")
+            else:
+                record.messages.append(
+                    MessageRecord(
+                        id=str(message.message_id),
+                        role="user",
+                        content=message.content,
+                        position=max((row.position for row in record.messages), default=-1) + 1,
+                    )
+                )
+                record.updated_at = datetime.now(UTC)
+            session = object_session(record)
+            assert session is not None
             session.flush()
             session.refresh(record)
             return SessionHistory.model_validate(record)

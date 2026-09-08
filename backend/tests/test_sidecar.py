@@ -32,6 +32,28 @@ def request(request_id: str, method: str) -> dict[str, Any]:
     return {"type": "request", "requestId": request_id, "method": method, "params": {}}
 
 
+def test_chat_send_persists_across_restart_and_deduplicates(tmp_path: Path) -> None:
+    from uuid import uuid4
+
+    path = tmp_path / "chat.db"
+    created_process = run_sidecar(path, [request("create", "user.sessions.create")], tmp_path)
+    created = json.loads(created_process.stdout)["result"]["session"]
+    send = request("send", "user.sessions.send")
+    send["params"] = {
+        "session_id": created["id"],
+        "message": {"message_id": str(uuid4()), "content": "第一行\n第二行 <script>"},
+    }
+    result = run_sidecar(path, [send, send], tmp_path)
+    assert result.returncode == 0, result.stderr
+    first, second = map(json.loads, result.stdout.splitlines())
+    assert first["result"] == second["result"]
+    assert len(first["result"]["session"]["messages"]) == 1
+    read = request("read", "sessions.get")
+    read["params"] = {"session_id": created["id"]}
+    restarted = run_sidecar(path, [read], tmp_path)
+    assert json.loads(restarted.stdout)["result"] == first["result"]
+
+
 def test_retry_without_executor_preserves_failed_session(tmp_path: Path) -> None:
     from wisetodo.sessions.service import SessionService
     from wisetodo.sessions.tables import MessageRecord, SessionRecord

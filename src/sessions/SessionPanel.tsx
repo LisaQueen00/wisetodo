@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { SessionApi, SessionHistory, SessionStatus, SessionSummary } from "./types";
+import { ChatMessages } from "./ChatMessages";
 
 const labels: Record<SessionStatus, string> = {
   ready: "待开始", running: "执行中", waiting_input: "等待补充", completed: "已完成", failed: "失败", cancelled: "已停止",
@@ -16,6 +17,11 @@ export function SessionPanel({ api }: { api: SessionApi }) {
   const [listReady, setListReady] = useState(false);
   const request = useRef(0);
   const mutation = useRef(false);
+  const composing = useRef(false);
+  const [drafts, setDrafts] = useState<Record<string, { text: string; messageId: string }>>({});
+  const [notice, setNotice] = useState("");
+  const draft = active ? drafts[active.id] : undefined;
+  const canInput = !!active && active.status !== "completed" && active.status !== "running";
   useEffect(() => {
     const requests = request;
     const ticket = ++request.current;
@@ -29,6 +35,8 @@ export function SessionPanel({ api }: { api: SessionApi }) {
     if (mutation.current) return;
     const ticket = ++request.current;
     setActive(null);
+    setNotice("");
+    composing.current = false;
     setBusy(true);
     setError("");
     try {
@@ -37,19 +45,29 @@ export function SessionPanel({ api }: { api: SessionApi }) {
     } catch { if (ticket === request.current) setError("加载会话失败，请重新选择或刷新历史。"); }
     finally { if (ticket === request.current) setBusy(false); }
   }
-  async function change(kind: "create" | "delete" | "retry", id?: string) {
+  async function change(kind: "create" | "delete" | "retry" | "send", id?: string) {
     if (mutation.current) return;
+    if (kind === "send" && (!canInput || busy || !listReady || !draft?.text.trim() || composing.current)) return;
     mutation.current = true;
     setMutating(true);
     const ticket = ++request.current;
     setBusy(true);
     setError("");
+    setNotice("");
     try {
       if (kind === "create") {
         const created = await api.create(label);
         if (ticket === request.current) {
           setRows((previous) => [created, ...previous.filter((row) => row.id !== created.id)]);
           setActive(created); setLabel("");
+        }
+      } else if (kind === "send" && id && draft) {
+        const saved = await api.send(id, draft.messageId, draft.text);
+        if (ticket === request.current) {
+          setActive(saved);
+          setRows((previous) => [saved, ...previous.filter((row) => row.id !== id)]);
+          setDrafts((previous) => { const next = { ...previous }; delete next[id]; return next; });
+          setNotice("消息已保存。执行器尚未接入，暂不会生成回复或 Todo。");
         }
       } else if (kind === "retry" && id) {
         const retried = await api.retry(id);
@@ -62,10 +80,12 @@ export function SessionPanel({ api }: { api: SessionApi }) {
         if (ticket === request.current) {
           setRows((previous) => previous.filter((row) => row.id !== id));
           setActive((previous) => previous?.id === id ? null : previous);
+          setDrafts((previous) => { const next = { ...previous }; delete next[id]; return next; });
         }
       }
     } catch (failure) {
-      if (ticket === request.current) setError(kind === "retry"
+      if (ticket === request.current) setError(kind === "send"
+        ? (typeof failure === "string" ? failure : "消息保存失败，输入已保留，请重试发送。") : kind === "retry"
         ? (typeof failure === "string" ? failure : "重试失败，请刷新历史检查会话状态。")
         : kind === "create" ? "新建会话失败，请重试。" : "删除会话失败，请重试。");
     }
@@ -106,12 +126,30 @@ export function SessionPanel({ api }: { api: SessionApi }) {
         </div>}
         {active.status === "completed"
           ? <p role="status" className="mt-3 rounded-lg bg-white/5 p-3">此会话已完成，只读；如需继续，请新建会话。</p>
-          : <p className="mt-3">消息展示与发送功能待接入。</p>}
+          : <p className="mt-3 text-xs">发送仅保存消息，执行器尚未接入。</p>}
+        <ChatMessages key={active.id} messages={active.messages} />
       </> : <p>新建会话，或点击历史会话加载；不会自动恢复上次对话。</p>}
     </div>
-    <textarea disabled readOnly={active?.status === "completed"}
-      aria-label={active?.status === "completed" ? "聊天输入（会话已完成，只读）" : "聊天输入（待接入）"}
-      placeholder={active?.status === "completed" ? "此会话已完成，请新建会话" : "聊天功能待接入"} rows={3}
-      className="mt-4 w-full shrink-0 resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm placeholder:text-white/30" />
+    {notice && <p role="status" className="mt-2 text-xs text-white/60">{notice}</p>}
+    <form aria-label="发送消息" className="mt-4 shrink-0" onSubmit={(event) => { event.preventDefault(); void change("send", active?.id); }}>
+      <textarea disabled={!canInput || busy || !listReady} readOnly={active?.status === "completed"}
+        aria-label={active?.status === "completed" ? "聊天输入（会话已完成，只读）" : "聊天输入"}
+        placeholder={!active ? "请先新建或选择会话" : active.status === "completed" ? "此会话已完成，请新建会话" : active.status === "running" ? "正在执行，请等待" : "输入消息；Shift+Enter 换行"}
+        rows={3} value={draft?.text ?? ""}
+        onChange={(event) => {
+          if (!active) return;
+          const text = event.target.value;
+          const messageId = crypto.randomUUID();
+          setDrafts((previous) => ({ ...previous, [active.id]: { text, messageId } }));
+        }}
+        onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && !composing.current && event.keyCode !== 229) {
+            event.preventDefault(); void change("send", active?.id);
+          }
+        }}
+        className="w-full resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm placeholder:text-white/30" />
+      {canInput && <button disabled={busy || !listReady || !draft?.text.trim()} className="mt-2 rounded-lg bg-violet-400/15 px-4 py-2 text-sm disabled:opacity-30">发送</button>}
+    </form>
   </>;
 }

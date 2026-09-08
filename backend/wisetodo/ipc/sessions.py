@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.messages import IpcRequest
+from wisetodo.sessions.models import ChatInput
 from wisetodo.sessions.retry import RetryExecutionError, RetryUnavailableError
 from wisetodo.sessions.service import SessionService
 
@@ -14,6 +15,7 @@ METHODS = frozenset(
         "user.sessions.create",
         "user.sessions.delete",
         "user.sessions.retry",
+        "user.sessions.send",
     }
 )
 
@@ -40,6 +42,9 @@ async def dispatch_session(request: IpcRequest, service: SessionService) -> dict
             return {"deleted": service.delete(session_id)}
         if request.method == "user.sessions.retry":
             return {"session": (await service.retry(session_id)).model_dump(mode="json")}
+        if request.method == "user.sessions.send":
+            message = ChatInput.model_validate(request.params.get("message"))
+            return {"session": service.send_message(session_id, message).model_dump(mode="json")}
         history = service.get(session_id)
         if history is None:
             raise LookupError("Session not found")
@@ -67,7 +72,9 @@ async def dispatch_session(request: IpcRequest, service: SessionService) -> dict
                 code=ErrorCode.SESSION_VALIDATION_FAILED,
                 message="Invalid Session operation",
                 user_message=(
-                    "只能重试有用户输入的失败或已取消会话，请刷新历史检查状态。"
+                    "消息不能为空，且执行中的会话不能接收新输入，请检查后重试。"
+                    if request.method == "user.sessions.send"
+                    else "只能重试有用户输入的失败或已取消会话，请刷新历史检查状态。"
                     if request.method == "user.sessions.retry"
                     else "会话参数无效，或会话仍在执行；请检查并停止执行后重试。"
                 ),

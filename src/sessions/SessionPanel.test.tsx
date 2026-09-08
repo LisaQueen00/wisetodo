@@ -9,7 +9,7 @@ afterEach(cleanup);
 const first: SessionHistory = { id: "one", label: "First", status: "ready", created_at: "2026-01-01", updated_at: "2026-01-01", messages: [], tool_events: [] };
 const second = { ...first, id: "two", label: "Second" };
 function api(): SessionApi {
-  return { retry: vi.fn(), list: vi.fn(async () => [first, second]), get: vi.fn(async (id) => id === first.id ? first : second),
+  return { send: vi.fn(), retry: vi.fn(), list: vi.fn(async () => [first, second]), get: vi.fn(async (id) => id === first.id ? first : second),
     create: vi.fn(async (label) => ({ ...first, id: "new", label })), delete: vi.fn(async () => true) };
 }
 
@@ -84,7 +84,7 @@ it("marks completed history read-only while allowing deletion and a new independ
   fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
   await screen.findByRole("heading", { name: "新会话" });
   expect(screen.queryByText("此会话已完成，只读；如需继续，请新建会话。")).not.toBeInTheDocument();
-  expect(screen.getByRole("textbox", { name: "聊天输入（待接入）" })).not.toHaveAttribute("readonly");
+  expect(screen.getByRole("textbox", { name: "聊天输入" })).not.toHaveAttribute("readonly");
   expect(screen.getByRole("button", { name: "First已完成" })).toBeInTheDocument();
 });
 
@@ -107,4 +107,46 @@ it.each(["failed", "cancelled"] as const)("retries %s history, preserves it on e
   await screen.findByText("状态：等待补充");
   expect(service.retry).toHaveBeenCalledWith("one");
   expect(screen.queryByRole("button", { name: "重试" })).not.toBeInTheDocument();
+});
+
+it("saves multiline input, handles IME, keeps failed drafts and reuses the message ID on retry", async () => {
+  const service = api();
+  vi.mocked(service.send).mockRejectedValueOnce(new Error("offline"))
+    .mockImplementationOnce(async (id, messageId, content) => ({ ...first, messages: [
+      { id: messageId, session_id: id, position: 0, role: "user", content, attachments: [], created_at: "date" },
+    ] }));
+  render(<SessionPanel api={service} />);
+  fireEvent.click(await screen.findByRole("button", { name: "First待开始" }));
+  await screen.findByRole("heading", { name: "First" });
+  const input = screen.getByRole("textbox", { name: "聊天输入" });
+  expect(screen.getByRole("button", { name: "发送" })).toBeDisabled();
+  fireEvent.change(input, { target: { value: "第一行\n第二行" } });
+  fireEvent.compositionStart(input);
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(service.send).not.toHaveBeenCalled();
+  fireEvent.compositionEnd(input);
+  fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
+  expect(service.send).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: "Enter" });
+  await screen.findByRole("alert");
+  expect(input).toHaveValue("第一行\n第二行");
+  fireEvent.click(screen.getByRole("button", { name: "发送" }));
+  await screen.findByRole("list", { name: "聊天消息" });
+  expect(vi.mocked(service.send).mock.calls[0]).toEqual(vi.mocked(service.send).mock.calls[1]);
+  expect(input).toHaveValue("");
+  expect(screen.getByText("消息已保存。执行器尚未接入，暂不会生成回复或 Todo。")).toBeInTheDocument();
+});
+
+it("keeps drafts separate across Session switches", async () => {
+  const service = api();
+  render(<SessionPanel api={service} />);
+  fireEvent.click(await screen.findByRole("button", { name: "First待开始" }));
+  await screen.findByRole("heading", { name: "First" });
+  fireEvent.change(screen.getByRole("textbox", { name: "聊天输入" }), { target: { value: "First draft" } });
+  fireEvent.click(screen.getByRole("button", { name: "Second待开始" }));
+  await screen.findByRole("heading", { name: "Second" });
+  expect(screen.getByRole("textbox", { name: "聊天输入" })).toHaveValue("");
+  fireEvent.click(screen.getByRole("button", { name: "First待开始" }));
+  await screen.findByRole("heading", { name: "First" });
+  expect(screen.getByRole("textbox", { name: "聊天输入" })).toHaveValue("First draft");
 });
