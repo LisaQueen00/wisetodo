@@ -32,6 +32,43 @@ def request(request_id: str, method: str) -> dict[str, Any]:
     return {"type": "request", "requestId": request_id, "method": method, "params": {}}
 
 
+def test_session_crud_over_real_sidecar(tmp_path: Path) -> None:
+    path = tmp_path / "session-ipc.db"
+    create = request("create", "user.sessions.create")
+    create["params"] = {"label": "阅读计划"}
+    result = run_sidecar(path, [create], tmp_path)
+    assert result.returncode == 0, result.stderr
+    created = json.loads(result.stdout)["result"]["session"]
+    read = request("read", "sessions.get")
+    read["params"] = {"session_id": created["id"]}
+    delete = request("delete", "user.sessions.delete")
+    delete["params"] = read["params"]
+    invalid = request("invalid", "user.sessions.create")
+    invalid["params"] = {"label": 42}
+    result = run_sidecar(
+        path,
+        [
+            request("list", "sessions.list"),
+            read,
+            invalid,
+            delete,
+            read,
+            request("todos", "todos.list"),
+        ],
+        tmp_path,
+    )
+    listed, loaded, failed, deleted, missing, todos = map(json.loads, result.stdout.splitlines())
+    assert listed["result"]["sessions"][0]["id"] == created["id"]
+    assert "messages" not in listed["result"]["sessions"][0]
+    assert loaded["result"]["session"] == created
+    assert failed["error"]["code"] == "SESSION_VALIDATION_FAILED"
+    assert deleted["result"] == {"deleted": True}
+    assert missing["error"]["code"] == "SESSION_NOT_FOUND"
+    assert todos["result"] == {"todos": []}
+    restarted = run_sidecar(path, [request("list", "sessions.list")], tmp_path)
+    assert json.loads(restarted.stdout)["result"] == {"sessions": []}
+
+
 def test_runtime_migrates_nested_database_idempotently(tmp_path: Path) -> None:
     database_path = tmp_path / "用户 100%" / "data" / "wisetodo.db"
     database = initialize_database(database_path)

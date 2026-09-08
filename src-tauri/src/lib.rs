@@ -72,6 +72,34 @@ async fn todos_move(
         .await.map_err(|_| "Todo 排序任务异常终止".to_owned())?
 }
 
+#[tauri::command]
+async fn sessions_list(backend: tauri::State<'_, Arc<sidecar::TodoBackend>>) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.sessions_list())
+        .await.map_err(|_| "会话读取任务异常终止".to_owned())?
+}
+
+#[tauri::command]
+async fn sessions_get(backend: tauri::State<'_, Arc<sidecar::TodoBackend>>, session_id: String) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.sessions_get(session_id))
+        .await.map_err(|_| "会话读取任务异常终止".to_owned())?
+}
+
+#[tauri::command]
+async fn sessions_create(backend: tauri::State<'_, Arc<sidecar::TodoBackend>>, label: String) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.sessions_create(label))
+        .await.map_err(|_| "会话新建任务异常终止".to_owned())?
+}
+
+#[tauri::command]
+async fn sessions_delete(backend: tauri::State<'_, Arc<sidecar::TodoBackend>>, session_id: String) -> Result<serde_json::Value, String> {
+    let backend = Arc::clone(backend.inner());
+    tauri::async_runtime::spawn_blocking(move || backend.sessions_delete(session_id))
+        .await.map_err(|_| "会话删除任务异常终止".to_owned())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -89,7 +117,7 @@ pub fn run() {
             app.manage(Arc::new(sidecar::TodoBackend::new(database_path)));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![health, todos_list, todos_create, todos_update, todos_delete, todos_set_item_completed, todos_move])
+        .invoke_handler(tauri::generate_handler![health, todos_list, todos_create, todos_update, todos_delete, todos_set_item_completed, todos_move, sessions_list, sessions_get, sessions_create, sessions_delete])
         .build(tauri::generate_context!())
         .expect("error while building WiseTodo")
         .run(|app, event| {

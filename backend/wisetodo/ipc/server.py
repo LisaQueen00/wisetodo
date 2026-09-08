@@ -10,6 +10,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.messages import IpcCancel, IpcFailure, IpcRequest, IpcResponse
+from wisetodo.ipc.sessions import METHODS, SessionRequestError, dispatch_session
+from wisetodo.sessions.service import SessionService
 from wisetodo.todos import TodoCaller, TodoService
 from wisetodo.todos.models import TodoEdit, TodoInput
 
@@ -20,7 +22,15 @@ class UnknownMethodError(ValueError):
     pass
 
 
-async def dispatch(request: IpcRequest, todo_service: TodoService | None = None) -> dict[str, Any]:
+async def dispatch(
+    request: IpcRequest,
+    todo_service: TodoService | None = None,
+    session_service: SessionService | None = None,
+) -> dict[str, Any]:
+    if request.method in METHODS:
+        if session_service is None:
+            raise RuntimeError("Session service is not initialized")
+        return dispatch_session(request, session_service)
     if request.method == "health":
         return {"status": "ok"}
     if request.method == "todos.list":
@@ -94,7 +104,9 @@ def _handle_invalid_request(line: str) -> None:
         print("Ignored invalid IPC input without a request ID", file=sys.stderr, flush=True)
 
 
-async def run_stdio_server(todo_service: TodoService | None = None) -> None:
+async def run_stdio_server(
+    todo_service: TodoService | None = None, session_service: SessionService | None = None
+) -> None:
     """Read one JSON request per line and emit one JSON response per line."""
     while line := await asyncio.to_thread(sys.stdin.readline):
         try:
@@ -107,7 +119,9 @@ async def run_stdio_server(todo_service: TodoService | None = None) -> None:
             continue
 
         try:
-            result = await dispatch(message, todo_service)
+            result = await dispatch(message, todo_service, session_service)
+        except SessionRequestError as failure:
+            error = failure.error
         except UnknownMethodError:
             error = WiseTodoError(
                 code=ErrorCode.IPC_METHOD_NOT_FOUND,

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from wisetodo.database import initialize_database
 from wisetodo.ipc.server import run_stdio_server
+from wisetodo.sessions.service import SessionService
 from wisetodo.todos import TodoService
 
 
@@ -27,7 +28,9 @@ def main() -> None:
         raise SystemExit(1) from None
 
     try:
-        asyncio.run(run_stdio_server(TodoService(database.sessions)))
+        asyncio.run(
+            run_stdio_server(TodoService(database.sessions), SessionService(database.sessions))
+        )
     finally:
         database.dispose()
 

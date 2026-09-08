@@ -32,6 +32,22 @@ impl TodoBackend {
         self.call("todos.list", json!({}))
     }
 
+    pub fn sessions_list(&self) -> Result<Value, String> {
+        self.call("sessions.list", json!({}))
+    }
+
+    pub fn sessions_get(&self, session_id: String) -> Result<Value, String> {
+        self.call("sessions.get", json!({"session_id": session_id}))
+    }
+
+    pub fn sessions_create(&self, label: String) -> Result<Value, String> {
+        self.call("user.sessions.create", json!({"label": label}))
+    }
+
+    pub fn sessions_delete(&self, session_id: String) -> Result<Value, String> {
+        self.call("user.sessions.delete", json!({"session_id": session_id}))
+    }
+
     pub fn create(&self, todo: Value) -> Result<Value, String> {
         self.call("user.todos.create", json!({"todo": todo}))
     }
@@ -222,7 +238,8 @@ fn decode_response(line: &str, request_id: &str) -> Result<Value, String> {
             .to_owned());
     }
     let result = response.get("result").ok_or("Todo 服务响应缺少结果")?;
-    if !(result["todos"].is_array() || result["todo"].is_object() || result["deleted"].is_boolean()) {
+    if !(result["todos"].is_array() || result["todo"].is_object() || result["deleted"].is_boolean()
+        || result["sessions"].is_array() || result["session"].is_object()) {
         return Err("Todo 服务响应缺少结果数据".into());
     }
     Ok(result.clone())
@@ -284,6 +301,12 @@ finally:
             .current_dir(root).status().unwrap();
         assert!(status.success());
         let listed = backend.list().unwrap();
+        assert_eq!(backend.sessions_list().unwrap(), json!({"sessions":[]}));
+        let history = backend.sessions_create("学习项目".to_owned()).unwrap();
+        let session_id = history["session"]["id"].as_str().unwrap().to_owned();
+        assert_eq!(backend.sessions_get(session_id.clone()).unwrap(), history);
+        assert_eq!(backend.sessions_delete(session_id).unwrap(), json!({"deleted":true}));
+        assert_eq!(backend.sessions_list().unwrap(), json!({"sessions":[]}));
         assert_eq!(listed["todos"].as_array().unwrap().len(), 2);
         assert_eq!(listed["todos"][0]["topic"], "优先任务");
         assert_eq!(listed["todos"][0]["progress"], 0.0);
