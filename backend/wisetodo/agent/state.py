@@ -2,8 +2,13 @@ from __future__ import annotations
 
 from typing import Any, TypedDict
 
+from wisetodo.agent.generation import ValidatedGeneration
+from wisetodo.model.contracts import ModelRequest
+
 
 class AgentState(TypedDict, total=False):
+    model_request: ModelRequest
+    generation: ValidatedGeneration
     session_id: str
     user_message: str
     attachments: list[dict[str, Any]]

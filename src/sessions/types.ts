@@ -11,12 +11,13 @@ export interface ToolEvent {
   tool_name: string; event_type: "started" | "completed" | "failed" | "cancelled";
   payload: Record<string, unknown>; created_at: string;
 }
-export interface SessionHistory extends SessionSummary { messages: Message[]; tool_events: ToolEvent[] }
+export interface SessionHistory extends SessionSummary { messages: Message[]; tool_events: ToolEvent[]; target_todo_id?: string | null }
 export interface SessionApi {
+  executesMessages?: boolean;
   listenRuns?: (handler: (event: RunEvent) => void) => Promise<() => void>;
   cancel?: (sessionId: string, runId: string) => Promise<boolean>;
   listenFileDrops?: (handler: (paths: string[], x: number, y: number) => void) => Promise<() => void>;
-  send: (id: string, messageId: string, content: string, urls?: string[], files?: string[]) => Promise<SessionHistory>;
+  send: (id: string, messageId: string, content: string, urls?: string[], files?: string[], todoId?: string) => Promise<SessionHistory>;
   retry: (id: string) => Promise<SessionHistory>;
   list: () => Promise<SessionSummary[]>;
   get: (id: string) => Promise<SessionHistory>;

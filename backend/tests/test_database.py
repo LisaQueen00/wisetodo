@@ -40,6 +40,6 @@ def test_alembic_upgrades_a_new_database_to_head(tmp_path: Path) -> None:
                 text("SELECT version_num FROM alembic_version")
             ).scalar_one()
 
-        assert revision == "0003_create_session_tables"
+        assert revision == "0004_session_execution"
     finally:
         database.dispose()

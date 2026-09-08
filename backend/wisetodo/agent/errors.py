@@ -20,6 +20,12 @@ KNOWN_MODEL_ERRORS = (
 )
 
 
+class AgentExecutionError(Exception):
+    def __init__(self, error: WiseTodoError) -> None:
+        self.error = error
+        super().__init__(error.message)
+
+
 def map_agent_error(
     error: BaseException, *, stage: Literal["model", "todo", "runtime"] = "runtime"
 ) -> WiseTodoError:

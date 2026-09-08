@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, object_session, selectinload, sessionmaker
 from wisetodo.ipc.events import emit_run
 from wisetodo.sessions.models import ChatInput, SessionHistory, SessionStatus, SessionSummary
 from wisetodo.sessions.retry import (
+    AgentExecutor,
     RetryExecutionError,
     RetryExecutor,
     RetryOutcome,
@@ -29,10 +30,15 @@ class SessionReadOnlyError(PermissionError):
 
 class SessionService:
     def __init__(
-        self, sessions: sessionmaker[Session], retry_executor: RetryExecutor | None = None
+        self,
+        sessions: sessionmaker[Session],
+        retry_executor: RetryExecutor | None = None,
+        *,
+        agent_executor: AgentExecutor | None = None,
     ) -> None:
         self._sessions = sessions
         self._retry_executor = retry_executor
+        self.agent_executor = agent_executor
         self._active_retries: dict[str, str] = {}
         self._run_tasks: dict[str, asyncio.Task[object]] = {}
 
@@ -53,6 +59,7 @@ class SessionService:
             ).all()
             for record in records:
                 record.status = SessionStatus.FAILED
+                record.active_run_id = None
                 record.updated_at = datetime.now(UTC)
                 record.messages.append(
                     MessageRecord(
@@ -65,6 +72,8 @@ class SessionService:
             return len(records)
 
     async def retry(self, session_id: str) -> SessionHistory:
+        if self.agent_executor is not None:
+            return await self._run_agent(session_id, SessionEvent.RETRY)
         run_id = str(uuid4())
         with self.write_history(session_id) as record:
             target = next_status(SessionStatus(record.status), SessionEvent.RETRY)
@@ -104,6 +113,72 @@ class SessionService:
             if self._active_retries.get(session_id) == run_id:
                 del self._active_retries[session_id]
             emit_run("run.finished", session_id, run_id)
+
+    async def submit(self, session_id: str, message: ChatInput) -> SessionHistory:
+        # Replay of an acknowledged-or-lost send must never start a second Run.
+        history = self.get(session_id)
+        if history is None:
+            raise LookupError("Session not found")
+        existing = next(
+            (row for row in history.messages if row.id == str(message.message_id)), None
+        )
+        if existing is not None:
+            if (
+                existing.role != "user"
+                or existing.content != message.content
+                or existing.attachments != [*message.urls, *message.files]
+            ):
+                raise ValueError("Message ID reused for different content")
+            return history
+        self.send_message(session_id, message)
+        return await self._run_agent(session_id, SessionEvent.SUBMIT)
+
+    async def _run_agent(self, session_id: str, event: SessionEvent) -> SessionHistory:
+        if self.agent_executor is None:
+            raise RetryUnavailableError("Agent executor is not configured")
+        run_id = str(uuid4())
+        with self.write_history(session_id) as record:
+            target = next_status(SessionStatus(record.status), event)
+            if session_id in self._active_retries or not any(
+                m.role == "user" for m in record.messages
+            ):
+                raise ValueError("Session cannot start execution")
+            record.status = target
+            record.active_run_id = run_id
+            record.updated_at = datetime.now(UTC)
+        self._active_retries[session_id] = run_id
+        task = asyncio.current_task()
+        if task is not None:
+            self._run_tasks[run_id] = task
+        try:
+            emit_run("run.started", session_id, run_id)
+            try:
+                await self.agent_executor.execute(session_id, run_id)
+            except asyncio.CancelledError:
+                self._fail_agent(session_id, run_id, SessionStatus.CANCELLED)
+                raise
+            except Exception as error:
+                self._fail_agent(session_id, run_id, SessionStatus.FAILED)
+                raise RetryExecutionError("Agent execution failed") from error
+            history = self.get(session_id)
+            if history is None or history.status not in {
+                SessionStatus.COMPLETED,
+                SessionStatus.WAITING_INPUT,
+            }:
+                raise RetryExecutionError("Agent did not persist a terminal result")
+            return history
+        finally:
+            self._run_tasks.pop(run_id, None)
+            self._active_retries.pop(session_id, None)
+            emit_run("run.finished", session_id, run_id)
+
+    def _fail_agent(self, session_id: str, run_id: str, status: SessionStatus) -> None:
+        with self.write_history(session_id) as record:
+            if record.active_run_id != run_id or record.status != SessionStatus.RUNNING:
+                raise ValueError("Stale Run")
+            record.status = status
+            record.active_run_id = None
+            record.updated_at = datetime.now(UTC)
 
     def _finish_retry(self, session_id: str, run_id: str, event: SessionEvent) -> None:
         if self._active_retries.get(session_id) != run_id:
@@ -151,6 +226,8 @@ class SessionService:
                         position=max((row.position for row in record.messages), default=-1) + 1,
                     )
                 )
+                record.pending_operation = None
+                record.target_todo_id = str(message.todo_id) if message.todo_id else None
                 record.updated_at = datetime.now(UTC)
             session = object_session(record)
             assert session is not None

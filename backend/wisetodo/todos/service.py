@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import cast
 
@@ -26,9 +27,24 @@ TodoList = list[Todo]
 class TodoService:
     def __init__(self, sessions: sessionmaker[Session]) -> None:
         self._sessions = sessions
+        self._transaction: Session | None = None
+
+    def within(self, transaction: Session) -> TodoService:
+        """Trusted Runtime adapter: caller owns the enclosing commit/rollback."""
+        scoped = TodoService(self._sessions)
+        scoped._transaction = transaction
+        return scoped
+
+    @contextmanager
+    def _write_scope(self) -> Iterator[Session]:
+        if self._transaction is not None:
+            yield self._transaction
+        else:
+            with self._sessions.begin() as session:
+                yield session
 
     def create(self, todo_input: TodoInput) -> Todo:
-        with self._sessions.begin() as session:
+        with self._write_scope() as session:
             record = TodoRecord(
                 topic=todo_input.topic,
                 priority=todo_input.priority,
@@ -55,7 +71,7 @@ class TodoService:
             return [self._to_domain(record) for record in records]
 
     def update(self, todo_id: str, changes: TodoChanges | TodoEdit) -> Todo | None:
-        with self._sessions.begin() as session:
+        with self._write_scope() as session:
             record = session.scalar(self._record_query().where(TodoRecord.id == todo_id))
             if record is None:
                 return None

@@ -361,20 +361,23 @@ finally:
         let listed = backend.list().unwrap();
         assert_eq!(backend.sessions_list().unwrap(), json!({"sessions":[]}));
         assert_eq!(backend.settings_get().unwrap(), json!({"settings":null}));
-        let settings = backend.settings_save(json!({"base_url":"http://localhost:8000/v1","model":"local"})).unwrap();
-        assert_eq!(settings["settings"]["has_api_key"], false);
-        assert_eq!(backend.settings_get().unwrap(), settings);
         let history = backend.sessions_create("学习项目".to_owned()).unwrap();
         let session_id = history["session"]["id"].as_str().unwrap().to_owned();
         assert_eq!(backend.sessions_get(session_id.clone()).unwrap(), history);
         let message = json!({"message_id":"7c2d7815-6e80-43af-a36a-ec58526ab877", "content":"你好\n消息保存测试", "urls":["https://example.com/book"]});
-        let saved = backend.sessions_send(session_id.clone(), message.clone()).unwrap();
+        assert!(backend.sessions_send(session_id.clone(), message.clone()).unwrap_err().contains("设置"));
+        let saved = backend.sessions_get(session_id.clone()).unwrap();
+        assert_eq!(saved["session"]["status"], "failed");
         assert_eq!(saved["session"]["messages"][0]["content"], "你好\n消息保存测试");
         assert_eq!(saved["session"]["messages"][0]["attachments"], json!(["https://example.com/book"]));
         assert_eq!(backend.sessions_send(session_id.clone(), message).unwrap(), saved);
         assert_eq!(backend.sessions_get(session_id.clone()).unwrap(), saved);
         assert_eq!(backend.sessions_delete(session_id).unwrap(), json!({"deleted":true}));
         assert_eq!(backend.sessions_list().unwrap(), json!({"sessions":[]}));
+        // Save test settings only after execution checks, so this test makes no model request.
+        let settings = backend.settings_save(json!({"base_url":"http://localhost:8000/v1","model":"local"})).unwrap();
+        assert_eq!(settings["settings"]["has_api_key"], false);
+        assert_eq!(backend.settings_get().unwrap(), settings);
         assert_eq!(listed["todos"].as_array().unwrap().len(), 2);
         assert_eq!(listed["todos"][0]["topic"], "优先任务");
         assert_eq!(listed["todos"][0]["progress"], 0.0);

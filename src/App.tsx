@@ -1,4 +1,5 @@
 import { TodoWorkspace } from "./todos/TodoWorkspace";
+import { useCallback, useState } from "react";
 import type { LoadTodos, TodoMutations } from "./todos/types";
 import { SessionPanel } from "./sessions/SessionPanel";
 import type { SessionApi } from "./sessions/types";
@@ -9,6 +10,8 @@ function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi }:
   loadTodos?: LoadTodos; mutations?: TodoMutations; preview?: boolean; sessionApi?: SessionApi;
   settingsApi?: SettingsApi;
 }) {
+  const [todoRevision, setTodoRevision] = useState(0);
+  const onCommitted = useCallback(() => setTodoRevision((value) => value + 1), []);
   return (
     <main className="grid h-dvh min-h-[520px] grid-cols-[minmax(0,3fr)_minmax(0,2fr)] overflow-hidden bg-[var(--surface-window)] text-[var(--text-primary)]">
       <section aria-label="Todo 工作区" className="flex min-h-0 min-w-0 flex-col border-r border-white/10">
@@ -21,7 +24,7 @@ function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi }:
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-5" tabIndex={0} aria-label="Todo 列表滚动区">
           {preview && <p className="mb-4 rounded-lg bg-white/5 p-3 text-xs text-white/60">示例数据预览 · 不会写入数据库</p>}
-          {loadTodos ? <TodoWorkspace key={preview ? "preview" : "live"} loadTodos={loadTodos} mutations={mutations} /> : (
+          {loadTodos ? <TodoWorkspace key={preview ? "preview" : "live"} loadTodos={loadTodos} mutations={mutations} refreshToken={todoRevision} /> : (
             <div role="status" className="rounded-2xl border border-dashed border-white/15 p-6">
               <p>请通过桌面应用查看 Todo</p>
               <p className="mt-2 text-sm text-white/50">浏览器无法连接本地数据库，请启动 WiseTodo 桌面应用。</p>
@@ -32,7 +35,7 @@ function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi }:
 
       <aside aria-label="Chat 工作区" className="flex min-h-0 min-w-0 flex-col p-5">
         {settingsApi ? <SettingsPanel api={settingsApi} /> : <h2 className="mb-5 shrink-0 text-sm font-medium text-white/70">Chat</h2>}
-        {sessionApi ? <SessionPanel api={sessionApi} /> : <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-dashed border-white/15 p-6 text-sm leading-7 text-white/50">
+        {sessionApi ? <SessionPanel api={sessionApi} loadTodos={loadTodos} onCommitted={onCommitted} /> : <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-dashed border-white/15 p-6 text-sm leading-7 text-white/50">
           从一个想做的事情开始。<br />对话功能接入后，可以在这里讨论并创建任务。
         </div>}
         {!sessionApi && <textarea disabled aria-label="聊天输入（待接入）" placeholder="聊天功能待接入" rows={3}

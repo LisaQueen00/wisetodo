@@ -48,11 +48,16 @@ def test_file_only_message_survives_sidecar_restart(tmp_path: Path) -> None:
     }
     saved = run_sidecar(path, [send], tmp_path)
     assert saved.returncode == 0, saved.stderr
-    result = json.loads(saved.stdout)["result"]
-    assert result["session"]["messages"][0]["attachments"] == [str(file)]
+    terminal = [
+        json.loads(line)
+        for line in saved.stdout.splitlines()
+        if json.loads(line)["type"] != "event"
+    ]
+    assert terminal[0]["error"]["code"] in {"SETTINGS_VALIDATION_FAILED", "RUN_CANCELLED"}
     read = request("read", "sessions.get")
     read["params"] = {"session_id": created["id"]}
-    assert json.loads(run_sidecar(path, [read], tmp_path).stdout)["result"] == result
+    result = json.loads(run_sidecar(path, [read], tmp_path).stdout)["result"]
+    assert result["session"]["messages"][0]["attachments"] == [str(file)]
     assert file.read_text(encoding="utf-8") == "Original file"
 
 
@@ -73,17 +78,26 @@ def test_chat_send_persists_across_restart_and_deduplicates(tmp_path: Path) -> N
     }
     result = run_sidecar(path, [send, send], tmp_path)
     assert result.returncode == 0, result.stderr
-    first, second = map(json.loads, result.stdout.splitlines())
-    assert first["result"] == second["result"]
-    assert len(first["result"]["session"]["messages"]) == 1
-    assert first["result"]["session"]["messages"][0]["attachments"] == ["https://example.com/book"]
+    responses = [
+        json.loads(line)
+        for line in result.stdout.splitlines()
+        if json.loads(line)["type"] != "event"
+    ]
+    assert any(
+        row.get("error", {}).get("code") in {"SETTINGS_VALIDATION_FAILED", "RUN_CANCELLED"}
+        for row in responses
+    )
     read = request("read", "sessions.get")
     read["params"] = {"session_id": created["id"]}
     restarted = run_sidecar(path, [read], tmp_path)
-    assert json.loads(restarted.stdout)["result"] == first["result"]
+    history = json.loads(restarted.stdout)["result"]["session"]
+    assert len(history["messages"]) == 1
+    assert history["messages"][0]["attachments"] == ["https://example.com/book"]
+    replay = run_sidecar(path, [send], tmp_path)
+    assert json.loads(replay.stdout)["result"]["session"] == history
 
 
-def test_retry_without_executor_preserves_failed_session(tmp_path: Path) -> None:
+def test_retry_without_settings_preserves_history(tmp_path: Path) -> None:
     from wisetodo.sessions.service import SessionService
     from wisetodo.sessions.tables import MessageRecord, SessionRecord
 
@@ -106,9 +120,16 @@ def test_retry_without_executor_preserves_failed_session(tmp_path: Path) -> None
     read["params"] = retry["params"]
     result = run_sidecar(path, [retry, read], tmp_path)
     assert result.returncode == 0, result.stderr
-    failure, loaded = map(json.loads, result.stdout.splitlines())
-    assert failure["error"]["code"] == "SESSION_RETRY_UNAVAILABLE"
-    assert loaded["result"]["session"] == original.model_dump(mode="json")
+    responses = [
+        json.loads(line)
+        for line in result.stdout.splitlines()
+        if json.loads(line)["type"] != "event"
+    ]
+    failure = next(row for row in responses if row["requestId"] == "retry")
+    assert failure["error"]["code"] in {"SETTINGS_VALIDATION_FAILED", "RUN_CANCELLED"}
+    loaded = json.loads(run_sidecar(path, [read], tmp_path).stdout)
+    assert loaded["result"]["session"]["messages"] == original.model_dump(mode="json")["messages"]
+    assert loaded["result"]["session"]["status"] in {"failed", "cancelled"}
 
 
 def test_session_crud_over_real_sidecar(tmp_path: Path) -> None:
@@ -172,7 +193,7 @@ def test_runtime_migrates_nested_database_idempotently(tmp_path: Path) -> None:
         with reopened.engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0003_create_session_tables"
+                == "0004_session_execution"
             )
     finally:
         reopened.dispose()

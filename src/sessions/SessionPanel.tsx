@@ -5,12 +5,15 @@ import { SessionStages } from "./SessionStages";
 import { UrlAttachments } from "./UrlAttachments";
 import { useFileDrops } from "./useFileDrops";
 import { RunControl } from "./RunControl";
+import type { LoadTodos, Todo } from "../todos/types";
 
 const labels: Record<SessionStatus, string> = {
   ready: "待开始", running: "执行中", waiting_input: "等待补充", completed: "已完成", failed: "失败", cancelled: "已停止",
 };
 
-export function SessionPanel({ api }: { api: SessionApi }) {
+export function SessionPanel({ api, loadTodos, onCommitted }: { api: SessionApi; loadTodos?: LoadTodos; onCommitted?: () => void }) {
+  const [targets, setTargets] = useState<Todo[]>([]);
+  const [targetId, setTargetId] = useState("");
   const [rows, setRows] = useState<SessionSummary[]>([]);
   const [active, setActive] = useState<SessionHistory | null>(null);
   const [label, setLabel] = useState("");
@@ -29,6 +32,14 @@ export function SessionPanel({ api }: { api: SessionApi }) {
   const canInput = !!active && active.status !== "completed" && active.status !== "running";
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeId = active?.id;
+  useEffect(() => {
+    if (!loadTodos || !api.executesMessages) return;
+    let live = true;
+    loadTodos().then((todos) => { if (live) setTargets(todos); }, () => {
+      if (live) setError("读取编辑目标失败，请刷新历史后重试。");
+    });
+    return () => { live = false; };
+  }, [loadTodos, api.executesMessages, activeId, busy, attempt]);
   const addFiles = useCallback((paths: string[]) => {
     if (!activeId || mutation.current) return;
     const messageId = crypto.randomUUID();
@@ -59,13 +70,13 @@ export function SessionPanel({ api }: { api: SessionApi }) {
     setError("");
     try {
       const history = await api.get(id);
-      if (ticket === request.current) setActive(history);
+      if (ticket === request.current) { setActive(history); setTargetId(history.target_todo_id ?? ""); }
     } catch { if (ticket === request.current) setError("加载会话失败，请重新选择或刷新历史。"); }
     finally { if (ticket === request.current) setBusy(false); }
   }
   async function change(kind: "create" | "delete" | "retry" | "send", id?: string) {
     if (mutation.current) return;
-    if (kind === "send" && (!canInput || busy || !listReady || (!draft?.text.trim() && !draft?.urls.length && !draft?.files.length) || composing.current)) return;
+    if (kind === "send" && (!canInput || busy || !listReady || !runEventsReady || (!draft?.text.trim() && !draft?.urls.length && !draft?.files.length) || composing.current)) return;
     mutation.current = true;
     setMutating(true);
     const ticket = ++request.current;
@@ -77,21 +88,25 @@ export function SessionPanel({ api }: { api: SessionApi }) {
         const created = await api.create(label);
         if (ticket === request.current) {
           setRows((previous) => [created, ...previous.filter((row) => row.id !== created.id)]);
-          setActive(created); setLabel("");
+          setActive(created); setLabel(""); setTargetId("");
         }
       } else if (kind === "send" && id && draft) {
-        const saved = await api.send(id, draft.messageId, draft.text, draft.urls, draft.files);
+        const saved = targetId
+          ? await api.send(id, draft.messageId, draft.text, draft.urls, draft.files, targetId)
+          : await api.send(id, draft.messageId, draft.text, draft.urls, draft.files);
         if (ticket === request.current) {
           setActive(saved);
           setRows((previous) => [saved, ...previous.filter((row) => row.id !== id)]);
           setDrafts((previous) => { const next = { ...previous }; delete next[id]; return next; });
-          setNotice("消息已保存。执行器尚未接入，暂不会生成回复或 Todo。");
+          if (saved.status === "completed") onCommitted?.();
+          setNotice(api.executesMessages ? "" : "消息已保存。执行器尚未接入，暂不会生成回复或 Todo。");
         }
       } else if (kind === "retry" && id) {
         const retried = await api.retry(id);
         if (ticket === request.current) {
           setActive(retried);
           setRows((previous) => [retried, ...previous.filter((row) => row.id !== retried.id)]);
+          if (retried.status === "completed") onCommitted?.();
         }
       } else if (id) {
         await api.delete(id);
@@ -102,12 +117,16 @@ export function SessionPanel({ api }: { api: SessionApi }) {
         }
       }
     } catch (failure) {
-      if (kind === "retry" && id && ticket === request.current) {
+      if ((kind === "retry" || (kind === "send" && api.executesMessages)) && id && ticket === request.current) {
         try {
           const history = await api.get(id);
           if (ticket === request.current) {
             setActive(history);
             setRows((previous) => previous.map((row) => row.id === id ? history : row));
+            if (kind === "send" && draft && history.messages.some((message) => message.id === draft.messageId && message.role === "user")) {
+              setDrafts((previous) => { const next = { ...previous }; delete next[id]; return next; });
+            }
+            if (history.status === "completed") { onCommitted?.(); setError(""); return; }
             if (history.status === "cancelled" && failure === "已停止执行。") { setError(""); setNotice("已停止执行。"); return; }
           }
         } catch { /* Keep the original safe retry error below. */ }
@@ -151,17 +170,30 @@ export function SessionPanel({ api }: { api: SessionApi }) {
         {(active.status === "failed" || active.status === "cancelled") && <div className="mt-3">
           <button disabled={busy || !listReady || !runEventsReady} onClick={() => { void change("retry", active.id); }}
             className="rounded-lg bg-white/10 px-3 py-2 disabled:opacity-30">重试</button>
-          <p className="mt-2 text-xs text-white/50">复用原输入和附件。当前执行器尚未接入，暂不能实际执行。</p>
+          <p className="mt-2 text-xs text-white/50">{api.executesMessages ? "有待提交结果时只重试保存，不再调用模型；否则复用原输入重新执行。" : "复用原输入和附件。当前执行器尚未接入，暂不能实际执行。"}</p>
         </div>}
         {active.status === "completed"
           ? <p role="status" className="mt-3 rounded-lg bg-white/5 p-3">此会话已完成，只读；如需继续，请新建会话。</p>
-          : <p className="mt-3 text-xs">发送仅保存消息，执行器尚未接入。</p>}
+          : <p className="mt-3 text-xs">{api.executesMessages ? "发送后执行；成功生成一个 Todo 后，此会话只读。" : "发送仅保存消息，执行器尚未接入。"}</p>}
         <ChatMessages key={active.id} messages={active.messages} />
         <SessionStages history={active} />
       </> : <p>新建会话，或点击历史会话加载；不会自动恢复上次对话。</p>}
     </div>
     {notice && <p role="status" className="mt-2 text-xs text-white/60">{notice}</p>}
     <form aria-label="发送消息" className="mt-4 shrink-0" onSubmit={(event) => { event.preventDefault(); void change("send", active?.id); }}>
+      {api.executesMessages && active && <label className="mb-2 block text-xs">编辑目标
+        <select aria-label="编辑目标" value={targetId} disabled={!canInput || busy || !listReady}
+          className="ml-2 max-w-full rounded bg-[var(--surface-window)] p-2"
+          onChange={(event) => {
+            setTargetId(event.target.value);
+            if (active) setDrafts((previous) => previous[active.id]
+              ? { ...previous, [active.id]: { ...previous[active.id], messageId: crypto.randomUUID() } } : previous);
+          }}>
+          <option value="">新建 Todo</option>
+          {targets.map((todo) => <option key={todo.id} value={todo.id}>{todo.topic}</option>)}
+          {targetId && !targets.some((todo) => todo.id === targetId) && <option value={targetId}>原目标已不可用</option>}
+        </select>
+      </label>}
       {active && <UrlAttachments key={active.id} urls={draft?.urls ?? []} disabled={!canInput || busy || !listReady}
         onChange={(urls) => {
           const messageId = crypto.randomUUID();
@@ -196,7 +228,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           }
         }}
         className="w-full resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm placeholder:text-white/30" />
-      {canInput && <button disabled={busy || !listReady || (!draft?.text.trim() && !draft?.urls.length && !draft?.files.length)} className="mt-2 rounded-lg bg-violet-400/15 px-4 py-2 text-sm disabled:opacity-30">发送</button>}
+      {canInput && <button disabled={busy || !listReady || !runEventsReady || (!draft?.text.trim() && !draft?.urls.length && !draft?.files.length)} className="mt-2 rounded-lg bg-violet-400/15 px-4 py-2 text-sm disabled:opacity-30">发送</button>}
     </form>
   </>;
 }

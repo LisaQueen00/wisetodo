@@ -35,6 +35,9 @@ class SessionRecord(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     label: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    active_run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    target_todo_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    pending_operation: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default=SessionStatus.READY, server_default="ready"
     )

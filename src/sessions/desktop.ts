@@ -30,6 +30,7 @@ function history(result: unknown): SessionHistory {
   return value as unknown as SessionHistory;
 }
 export const desktopSessionApi: SessionApi = {
+  executesMessages: true,
   async listenRuns(handler) {
     return listen<unknown>("wisetodo:run", ({ payload }) => {
       if (object(payload) && (payload.event === "run.started" || payload.event === "run.finished")
@@ -48,8 +49,8 @@ export const desktopSessionApi: SessionApi = {
       if (payload.type === "drop") handler(payload.paths, payload.position.x / window.devicePixelRatio, payload.position.y / window.devicePixelRatio);
     });
   },
-  async send(sessionId, messageId, content, urls = [], files = []) {
-    const result = history(await invoke("sessions_send", { sessionId, message: { message_id: messageId, content, ...(urls.length ? { urls } : {}), ...(files.length ? { files } : {}) } }));
+  async send(sessionId, messageId, content, urls = [], files = [], todoId) {
+    const result = history(await invoke("sessions_send", { sessionId, message: { message_id: messageId, content, ...(urls.length ? { urls } : {}), ...(files.length ? { files } : {}), ...(todoId ? { todo_id: todoId } : {}) } }));
     if (result.id !== sessionId) throw new Error("Mismatched Session ID");
     return result;
   },

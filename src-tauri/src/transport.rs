@@ -69,8 +69,8 @@ impl Transport {
             let start = Instant::now();
             loop {
                 if stopping.load(Ordering::Acquire) { return Err("后端正在关闭".into()); }
-                // A retry is a long model run, not a 30-second CRUD request.
-                if method != "user.sessions.retry" && start.elapsed() >= Duration::from_secs(30) {
+                // Sending and retrying may run the model, unlike short CRUD requests.
+                if !matches!(method, "user.sessions.retry" | "user.sessions.send") && start.elapsed() >= Duration::from_secs(30) {
                     let _ = self.send(json!({"type":"cancel","requestId":id}));
                     return Err("后端响应超时，请重新读取状态".into());
                 }

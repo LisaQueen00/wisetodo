@@ -31,3 +31,9 @@ class RetryOutcome(BaseModel):
 
 class RetryExecutor(Protocol):
     async def __call__(self, request: RetryRequest) -> RetryOutcome: ...
+
+
+class AgentExecutor(Protocol):
+    async def execute(self, session_id: str, run_id: str) -> None:
+        """Persist a terminal result atomically, checking the persisted Run owner."""
+        ...

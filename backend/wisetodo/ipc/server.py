@@ -209,7 +209,11 @@ async def run_stdio_server(
                 # Do not emit a second terminal response for the same in-flight ID.
                 print("Ignored duplicate active IPC request ID", file=sys.stderr, flush=True)
                 continue
-            if message.method in {"user.sessions.retry", "user.settings.test"}:
+            if message.method in {
+                "user.sessions.retry",
+                "user.sessions.send",
+                "user.settings.test",
+            }:
                 task = asyncio.create_task(handle(message), name=message.request_id)
                 tasks[message.request_id] = task
                 task.add_done_callback(forget)

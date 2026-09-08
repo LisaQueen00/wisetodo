@@ -7,7 +7,7 @@ type State = { source: LoadTodos; attempt: number } & (
   { status: "error" } | { status: "ready"; todos: Todo[] }
 );
 
-export function TodoWorkspace({ loadTodos, mutations }: { loadTodos: LoadTodos; mutations?: TodoMutations }) {
+export function TodoWorkspace({ loadTodos, mutations, refreshToken = 0 }: { loadTodos: LoadTodos; mutations?: TodoMutations; refreshToken?: number }) {
   const [state, setState] = useState<State | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [creating, setCreating] = useState(false);
@@ -64,7 +64,7 @@ export function TodoWorkspace({ loadTodos, mutations }: { loadTodos: LoadTodos; 
       () => { if (active) setState({ source: loadTodos, attempt, status: "error" }); },
     );
     return () => { active = false; };
-  }, [loadTodos, attempt]);
+  }, [loadTodos, attempt, refreshToken]);
 
   if (!state || state.source !== loadTodos || state.attempt !== attempt) {
     return <p role="status">正在读取 Todo…</p>;

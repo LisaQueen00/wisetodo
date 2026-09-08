@@ -2,7 +2,7 @@ from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from wisetodo.agent.errors import KNOWN_MODEL_ERRORS, map_agent_error
+from wisetodo.agent.errors import KNOWN_MODEL_ERRORS, AgentExecutionError, map_agent_error
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.messages import IpcRequest
 from wisetodo.sessions.models import ChatInput
@@ -51,6 +51,10 @@ async def dispatch_session(request: IpcRequest, service: SessionService) -> dict
             return {"session": (await service.retry(session_id)).model_dump(mode="json")}
         if request.method == "user.sessions.send":
             message = ChatInput.model_validate(request.params.get("message"))
+            if service.agent_executor is not None:
+                return {
+                    "session": (await service.submit(session_id, message)).model_dump(mode="json")
+                }
             return {"session": service.send_message(session_id, message).model_dump(mode="json")}
         history = service.get(session_id)
         if history is None:
@@ -65,6 +69,8 @@ async def dispatch_session(request: IpcRequest, service: SessionService) -> dict
             )
         ) from error
     except RetryExecutionError as error:
+        if isinstance(error.__cause__, AgentExecutionError):
+            raise SessionRequestError(error.__cause__.error) from None
         if isinstance(error.__cause__, KNOWN_MODEL_ERRORS):
             raise SessionRequestError(map_agent_error(error.__cause__)) from None
         raise SessionRequestError(

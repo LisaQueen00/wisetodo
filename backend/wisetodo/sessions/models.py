@@ -72,6 +72,7 @@ class ToolEvent(BaseModel):
 
 
 class SessionHistory(SessionSummary):
+    target_todo_id: str | None = None
     messages: list[Message]
     tool_events: list[ToolEvent]
 
@@ -79,6 +80,7 @@ class SessionHistory(SessionSummary):
 class ChatInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     message_id: UUID
+    todo_id: UUID | None = None
     content: StrictStr
     urls: list[StrictStr] = Field(default_factory=list)
     files: list[StrictStr] = Field(default_factory=list)

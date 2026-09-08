@@ -6,8 +6,10 @@ import sys
 from io import TextIOWrapper
 from pathlib import Path
 
+from wisetodo.agent.runtime import AgentRuntime
 from wisetodo.database import initialize_database
 from wisetodo.ipc.server import run_stdio_server
+from wisetodo.model.runtime import create_provider_scope
 from wisetodo.sessions.service import SessionService
 from wisetodo.settings import SettingsService
 from wisetodo.settings.development import DevelopmentSettingsStore
@@ -36,16 +38,21 @@ def main() -> None:
     try:
         session_service = SessionService(database.sessions)
         session_service.recover_interrupted()
+        todo_service = TodoService(database.sessions)
+        settings_service = SettingsService(
+            DevelopmentSettingsStore(
+                create_settings_store(args.database.parent),
+                args.dev_model_config,
+            )
+        )
+        session_service.agent_executor = AgentRuntime(
+            session_service, todo_service, create_provider_scope(settings_service)
+        )
         asyncio.run(
             run_stdio_server(
-                TodoService(database.sessions),
+                todo_service,
                 session_service,
-                SettingsService(
-                    DevelopmentSettingsStore(
-                        create_settings_store(args.database.parent),
-                        args.dev_model_config,
-                    )
-                ),
+                settings_service,
             )
         )
     finally:
