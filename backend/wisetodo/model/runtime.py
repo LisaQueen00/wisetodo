@@ -47,3 +47,10 @@ class RunProviderScope:
                 await provider.aclose()
             except Exception:
                 raise ModelRequestError from None
+
+
+def create_provider_scope(settings: SettingsService) -> RunProviderScope:
+    """Production factory; loading settings and opening HTTP wait until use."""
+    from wisetodo.model.openai_provider import OpenAIProvider
+
+    return RunProviderScope(settings, OpenAIProvider)
