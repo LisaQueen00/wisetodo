@@ -280,3 +280,43 @@ def test_url_only_message_is_persisted_and_idempotent(database: Database) -> Non
 def test_chat_input_rejects_unsafe_or_invalid_urls(url: object) -> None:
     with pytest.raises(ValueError):
         ChatInput.model_validate({"message_id": str(uuid4()), "content": "Text", "urls": [url]})
+
+
+def test_file_references_are_saved_without_reading_or_copying(
+    database: Database, tmp_path: Path
+) -> None:
+    file = tmp_path / "书籍.pdf"
+    file.write_bytes(b"fixture content")
+    service = SessionService(database.sessions)
+    created = service.create()
+    message = ChatInput(message_id=uuid4(), content="", files=[str(file), str(file)])
+    saved = service.send_message(created.id, message)
+    assert saved.messages[0].attachments == [str(file)]
+    assert file.read_bytes() == b"fixture content"
+    assert service.get(created.id) == saved
+    file.unlink()  # Simulate the user removing the original after sending.
+    assert service.send_message(created.id, message) == saved  # Lost-ack retry is idempotent.
+    assert service.delete(created.id)
+
+
+def test_missing_files_and_directories_do_not_save_messages(
+    database: Database, tmp_path: Path
+) -> None:
+    service = SessionService(database.sessions)
+    created = service.create()
+    directory = tmp_path / "folder.pdf"
+    directory.mkdir()
+    for file in [tmp_path / "missing.pdf", directory]:
+        with pytest.raises(ValueError, match="regular file"):
+            service.send_message(
+                created.id, ChatInput(message_id=uuid4(), content="Hi", files=[str(file)])
+            )
+    assert service.get(created.id) == created
+
+
+@pytest.mark.parametrize(
+    "path", ["relative.pdf", "https://example.com/book.pdf", "", "D:relative.txt"]
+)
+def test_file_references_require_absolute_local_paths(path: str) -> None:
+    with pytest.raises(ValueError):
+        ChatInput(message_id=uuid4(), content="Text", files=[path])

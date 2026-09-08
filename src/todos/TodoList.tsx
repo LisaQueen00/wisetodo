@@ -7,6 +7,7 @@ interface Sorting {
   end: () => void;
   canDrop: (todo: Todo) => boolean;
   drop: (todo: Todo) => void;
+  dropId: (id: string) => void;
   move: (id: string, targetId: string) => void;
   locked: boolean;
 }
@@ -87,6 +88,11 @@ export function TodoList({ todos, actions }: { todos: readonly Todo[]; actions?:
       setDragging(false);
     },
     move: (id, targetId) => { void move(id, targetId); },
+    dropId: (id) => {
+      const target = todos.find((todo) => todo.id === id);
+      if (target && canDrop(target) && dragged.current) void move(dragged.current, target.id);
+      dragged.current = null; setDragging(false);
+    },
   };
 
   function toggleTodo(todoId: string) {

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionApi, SessionHistory, SessionStatus, SessionSummary } from "./types";
 import { ChatMessages } from "./ChatMessages";
 import { SessionStages } from "./SessionStages";
 import { UrlAttachments } from "./UrlAttachments";
+import { useFileDrops } from "./useFileDrops";
 
 const labels: Record<SessionStatus, string> = {
   ready: "待开始", running: "执行中", waiting_input: "等待补充", completed: "已完成", failed: "失败", cancelled: "已停止",
@@ -20,10 +21,23 @@ export function SessionPanel({ api }: { api: SessionApi }) {
   const request = useRef(0);
   const mutation = useRef(false);
   const composing = useRef(false);
-  const [drafts, setDrafts] = useState<Record<string, { text: string; messageId: string; urls: string[] }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { text: string; messageId: string; urls: string[]; files: string[] }>>({});
   const [notice, setNotice] = useState("");
   const draft = active ? drafts[active.id] : undefined;
   const canInput = !!active && active.status !== "completed" && active.status !== "running";
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const activeId = active?.id;
+  const addFiles = useCallback((paths: string[]) => {
+    if (!activeId || mutation.current) return;
+    const messageId = crypto.randomUUID();
+    setDrafts((previous) => {
+      const old = previous[activeId];
+      return { ...previous, [activeId]: { text: old?.text ?? "", urls: old?.urls ?? [],
+        files: [...new Set([...(old?.files ?? []), ...paths])], messageId } };
+    });
+    setError("");
+  }, [activeId]);
+  useFileDrops(api, inputRef, canInput && !busy && listReady, addFiles, setError);
   useEffect(() => {
     const requests = request;
     const ticket = ++request.current;
@@ -49,7 +63,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
   }
   async function change(kind: "create" | "delete" | "retry" | "send", id?: string) {
     if (mutation.current) return;
-    if (kind === "send" && (!canInput || busy || !listReady || (!draft?.text.trim() && !draft?.urls.length) || composing.current)) return;
+    if (kind === "send" && (!canInput || busy || !listReady || (!draft?.text.trim() && !draft?.urls.length && !draft?.files.length) || composing.current)) return;
     mutation.current = true;
     setMutating(true);
     const ticket = ++request.current;
@@ -64,7 +78,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           setActive(created); setLabel("");
         }
       } else if (kind === "send" && id && draft) {
-        const saved = await api.send(id, draft.messageId, draft.text, draft.urls);
+        const saved = await api.send(id, draft.messageId, draft.text, draft.urls, draft.files);
         if (ticket === request.current) {
           setActive(saved);
           setRows((previous) => [saved, ...previous.filter((row) => row.id !== id)]);
@@ -138,9 +152,21 @@ export function SessionPanel({ api }: { api: SessionApi }) {
       {active && <UrlAttachments key={active.id} urls={draft?.urls ?? []} disabled={!canInput || busy || !listReady}
         onChange={(urls) => {
           const messageId = crypto.randomUUID();
-          setDrafts((previous) => ({ ...previous, [active.id]: { text: previous[active.id]?.text ?? "", urls, messageId } }));
+          setDrafts((previous) => ({ ...previous, [active.id]: { text: previous[active.id]?.text ?? "", urls, messageId, files: previous[active.id]?.files ?? [] } }));
         }} />}
-      <textarea disabled={!canInput || busy || !listReady} readOnly={active?.status === "completed"}
+      {!!draft?.files.length && <ul aria-label="待发送文件" className="mb-2 max-h-24 space-y-1 overflow-y-auto">
+        {draft.files.map((path) => <li key={path} className="flex gap-2 rounded-lg bg-white/5 p-2 text-xs">
+          <span className="min-w-0 flex-1 break-all">{path}</span>
+          <button type="button" disabled={!canInput || busy || !listReady} aria-label={`移除文件 ${path}`}
+            onClick={() => {
+              if (!active) return;
+              const messageId = crypto.randomUUID();
+              setDrafts((previous) => ({ ...previous, [active.id]: { ...previous[active.id], files: previous[active.id].files.filter((file) => file !== path), messageId } }));
+            }}>移除</button>
+        </li>)}
+      </ul>}
+      {active && <p className="mb-1 text-xs text-white/45">将 PDF、Markdown 或 TXT 拖入下方文本框；仅保存路径，不读取正文。</p>}
+      <textarea ref={inputRef} disabled={!canInput || busy || !listReady} readOnly={active?.status === "completed"}
         aria-label={active?.status === "completed" ? "聊天输入（会话已完成，只读）" : "聊天输入"}
         placeholder={!active ? "请先新建或选择会话" : active.status === "completed" ? "此会话已完成，请新建会话" : active.status === "running" ? "正在执行，请等待" : "输入消息；Shift+Enter 换行"}
         rows={3} value={draft?.text ?? ""}
@@ -148,7 +174,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           if (!active) return;
           const text = event.target.value;
           const messageId = crypto.randomUUID();
-          setDrafts((previous) => ({ ...previous, [active.id]: { text, messageId, urls: previous[active.id]?.urls ?? [] } }));
+          setDrafts((previous) => ({ ...previous, [active.id]: { text, messageId, urls: previous[active.id]?.urls ?? [], files: previous[active.id]?.files ?? [] } }));
         }}
         onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}
         onKeyDown={(event) => {
@@ -157,7 +183,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           }
         }}
         className="w-full resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm placeholder:text-white/30" />
-      {canInput && <button disabled={busy || !listReady || (!draft?.text.trim() && !draft?.urls.length)} className="mt-2 rounded-lg bg-violet-400/15 px-4 py-2 text-sm disabled:opacity-30">发送</button>}
+      {canInput && <button disabled={busy || !listReady || (!draft?.text.trim() && !draft?.urls.length && !draft?.files.length)} className="mt-2 rounded-lg bg-violet-400/15 px-4 py-2 text-sm disabled:opacity-30">发送</button>}
     </form>
   </>;
 }

@@ -72,7 +72,8 @@ async def dispatch_session(request: IpcRequest, service: SessionService) -> dict
                 code=ErrorCode.SESSION_VALIDATION_FAILED,
                 message="Invalid Session operation",
                 user_message=(
-                    "消息需包含正文或有效的 HTTP(S) 链接，执行中的会话不能接收新输入。"
+                    "请检查正文、链接和文件。"
+                    "文件须为存在的 PDF、Markdown 或 TXT，会话不能正在执行。"
                     if request.method == "user.sessions.send"
                     else "只能重试有用户输入的失败或已取消会话，请刷新历史检查状态。"
                     if request.method == "user.sessions.retry"

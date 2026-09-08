@@ -2,6 +2,7 @@ import asyncio
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
 from sqlalchemy import select, update
@@ -97,14 +98,16 @@ class SessionService:
                 if (
                     existing.role != "user"
                     or existing.content != message.content
-                    or existing.attachments != message.urls
+                    or existing.attachments != [*message.urls, *message.files]
                 ):
                     raise ValueError("Message ID reused for different content")
             else:
+                if any(not Path(path).is_file() for path in message.files):
+                    raise ValueError("Attachment is missing or is not a regular file")
                 record.messages.append(
                     MessageRecord(
                         id=str(message.message_id),
-                        attachments=list(message.urls),
+                        attachments=[*message.urls, *message.files],
                         role="user",
                         content=message.content,
                         position=max((row.position for row in record.messages), default=-1) + 1,

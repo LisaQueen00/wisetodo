@@ -181,3 +181,26 @@ it("adds and removes URL attachments, preserves them on failure and sends withou
   expect(vi.mocked(service.send).mock.calls[1][3]).toEqual(["https://example.org"]);
   expect(screen.queryByRole("list", { name: "待发送链接" })).not.toBeInTheDocument();
 });
+
+it("accepts file drops, removes references and persists a file-only message", async () => {
+  const service = api();
+  let drop!: (paths: string[], x: number, y: number) => void;
+  service.listenFileDrops = vi.fn(async (handler) => { drop = handler; return vi.fn(); });
+  vi.mocked(service.send).mockImplementation(async (id, messageId, content, urls, files) => ({ ...first, messages: [{
+    id: messageId, session_id: id, position: 0, role: "user", content, attachments: [...(urls ?? []), ...(files ?? [])], created_at: "date",
+  }] }));
+  render(<SessionPanel api={service} />);
+  fireEvent.click(await screen.findByRole("button", { name: "First待开始" }));
+  await screen.findByRole("heading", { name: "First" });
+  const input = screen.getByRole("textbox", { name: "聊天输入" });
+  vi.spyOn(input, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, right: 100, bottom: 100 } as DOMRect);
+  await act(async () => { drop(["D:/book.pdf", "D:/book.pdf"], 20, 20); });
+  expect(screen.getAllByLabelText("移除文件 D:/book.pdf")).toHaveLength(1);
+  fireEvent.click(screen.getByLabelText("移除文件 D:/book.pdf"));
+  expect(screen.getByRole("button", { name: "发送" })).toBeDisabled();
+  await act(async () => { drop(["D:/book.pdf"], 20, 20); });
+  fireEvent.click(screen.getByRole("button", { name: "发送" }));
+  await screen.findByText("附件：D:/book.pdf");
+  expect(vi.mocked(service.send).mock.calls[0][4]).toEqual(["D:/book.pdf"]);
+  expect(screen.queryByRole("list", { name: "待发送文件" })).not.toBeInTheDocument();
+});

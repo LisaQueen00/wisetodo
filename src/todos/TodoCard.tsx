@@ -1,5 +1,5 @@
 import { Check, ChevronRight } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { TodoEditor } from "./TodoEditor";
 import type { Todo, TodoActions } from "./types";
 
@@ -15,10 +15,12 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
     previous?: string; next?: string; locked: boolean;
     start: (id: string) => void; end: () => void;
     canDrop: (todo: Todo) => boolean; drop: (todo: Todo) => void;
+    dropId: (id: string) => void;
     move: (id: string, targetId: string) => void;
   };
 }) {
   const panelId = useId();
+  const pointer = useRef<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(false);
   const [savingItem, setSavingItem] = useState(false);
@@ -53,7 +55,7 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
   );
 
   return (
-    <li className="todo-card rounded-2xl border p-4" data-priority={todo.priority}
+    <li data-todo-id={todo.id} className="todo-card rounded-2xl border p-4" data-priority={todo.priority}
       data-completed={todo.completed}
       onDragOver={(event) => {
         if (reorder?.canDrop(todo)) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }
@@ -110,9 +112,35 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
       )}
       {reorder && (
         <div className="mt-3 flex gap-3 text-xs text-white/60">
-          <button type="button" draggable={!editLocked && !deleting && !savingItem && !reorder.locked}
+          <button type="button" draggable={false}
             disabled={editLocked || deleting || savingItem || reorder.locked}
-            aria-label={`拖动排序 ${todo.topic}`} className="cursor-grab disabled:opacity-30"
+            aria-label={`拖动排序 ${todo.topic}`} className="touch-none cursor-grab disabled:opacity-30"
+            onPointerDown={(event) => {
+              if (event.button !== 0 || editLocked || deleting || savingItem || reorder.locked) return;
+              event.preventDefault();
+              pointer.current = event.pointerId;
+              event.currentTarget.setPointerCapture?.(event.pointerId);
+              reorder.start(todo.id);
+            }}
+            onPointerMove={(event) => {
+              if (pointer.current === null) return;
+              const scroll = event.currentTarget.closest('[aria-label="Todo 列表滚动区"]');
+              if (scroll) {
+                const bounds = scroll.getBoundingClientRect();
+                if (event.clientY < bounds.top + 40) scroll.scrollTop -= 16;
+                else if (event.clientY > bounds.bottom - 40) scroll.scrollTop += 16;
+              }
+            }}
+            onPointerUp={(event) => {
+              if (pointer.current === null) return;
+              pointer.current = null;
+              const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-todo-id]");
+              if (target?.dataset.todoId) reorder.dropId(target.dataset.todoId);
+              else reorder.end();
+            }}
+            onPointerCancel={() => { pointer.current = null; reorder.end(); }}
+            onLostPointerCapture={() => { pointer.current = null; reorder.end(); }}
+            onKeyDown={(event) => { if (event.key === "Escape") { pointer.current = null; reorder.end(); } }}
             onDragStart={(event) => {
               event.dataTransfer.setData("text/plain", todo.id);
               event.dataTransfer.effectAllowed = "move";

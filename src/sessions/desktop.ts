@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import type { SessionApi, SessionHistory, SessionSummary } from "./types";
 
 function object(value: unknown): value is Record<string, unknown> {
@@ -28,8 +29,13 @@ function history(result: unknown): SessionHistory {
   return value as unknown as SessionHistory;
 }
 export const desktopSessionApi: SessionApi = {
-  async send(sessionId, messageId, content, urls = []) {
-    const result = history(await invoke("sessions_send", { sessionId, message: { message_id: messageId, content, ...(urls.length ? { urls } : {}) } }));
+  async listenFileDrops(handler) {
+    return getCurrentWebview().onDragDropEvent(({ payload }) => {
+      if (payload.type === "drop") handler(payload.paths, payload.position.x / window.devicePixelRatio, payload.position.y / window.devicePixelRatio);
+    });
+  },
+  async send(sessionId, messageId, content, urls = [], files = []) {
+    const result = history(await invoke("sessions_send", { sessionId, message: { message_id: messageId, content, ...(urls.length ? { urls } : {}), ...(files.length ? { files } : {}) } }));
     if (result.id !== sessionId) throw new Error("Mismatched Session ID");
     return result;
   },

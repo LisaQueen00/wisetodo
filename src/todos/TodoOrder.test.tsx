@@ -6,7 +6,7 @@ import App from "../App";
 import { loadPreviewTodos } from "./preview";
 import type { Todo, TodoMutations } from "./types";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 async function setup() {
   const [base] = await loadPreviewTodos();
@@ -31,6 +31,26 @@ function order() {
   return within(screen.getByRole("list", { name: "未完成 Todo" })).getAllByRole("heading")
     .map((heading) => heading.textContent);
 }
+
+it("sorts with pointer dragging without native HTML drag and supports cancellation", async () => {
+  vi.stubGlobal("PointerEvent", MouseEvent);
+  const mutations = await setup();
+  const target = screen.getByRole("button", { name: "A" }).closest("li")!;
+  const original = document.elementFromPoint;
+  document.elementFromPoint = vi.fn(() => target);
+  try {
+    const handle = screen.getByRole("button", { name: "拖动排序 C" });
+    expect(handle).toHaveAttribute("draggable", "false");
+    fireEvent.pointerDown(handle, { button: 0 });
+    fireEvent.pointerCancel(handle);
+    fireEvent.pointerUp(handle, { clientX: 20, clientY: 20 });
+    expect(mutations.move).not.toHaveBeenCalled();
+    fireEvent.pointerDown(handle, { button: 0 });
+    fireEvent.pointerUp(handle, { clientX: 20, clientY: 20 });
+    await waitFor(() => expect(order()).toEqual(["C", "A", "B"]));
+    expect(mutations.move).toHaveBeenCalledExactlyOnceWith("C", "A");
+  } finally { document.elementFromPoint = original; }
+});
 
 it("moves in both directions, disables boundary buttons and preserves expansion", async () => {
   const mutations = await setup();

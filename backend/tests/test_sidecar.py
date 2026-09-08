@@ -32,6 +32,30 @@ def request(request_id: str, method: str) -> dict[str, Any]:
     return {"type": "request", "requestId": request_id, "method": method, "params": {}}
 
 
+def test_file_only_message_survives_sidecar_restart(tmp_path: Path) -> None:
+    from uuid import uuid4
+
+    file = tmp_path / "阅读笔记.txt"
+    file.write_text("Original file", encoding="utf-8")
+    path = tmp_path / "files.db"
+    created = json.loads(
+        run_sidecar(path, [request("create", "user.sessions.create")], tmp_path).stdout
+    )["result"]["session"]
+    send = request("send", "user.sessions.send")
+    send["params"] = {
+        "session_id": created["id"],
+        "message": {"message_id": str(uuid4()), "content": "", "files": [str(file)]},
+    }
+    saved = run_sidecar(path, [send], tmp_path)
+    assert saved.returncode == 0, saved.stderr
+    result = json.loads(saved.stdout)["result"]
+    assert result["session"]["messages"][0]["attachments"] == [str(file)]
+    read = request("read", "sessions.get")
+    read["params"] = {"session_id": created["id"]}
+    assert json.loads(run_sidecar(path, [read], tmp_path).stdout)["result"] == result
+    assert file.read_text(encoding="utf-8") == "Original file"
+
+
 def test_chat_send_persists_across_restart_and_deduplicates(tmp_path: Path) -> None:
     from uuid import uuid4
 

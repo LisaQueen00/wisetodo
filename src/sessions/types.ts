@@ -13,7 +13,8 @@ export interface ToolEvent {
 }
 export interface SessionHistory extends SessionSummary { messages: Message[]; tool_events: ToolEvent[] }
 export interface SessionApi {
-  send: (id: string, messageId: string, content: string, urls?: string[]) => Promise<SessionHistory>;
+  listenFileDrops?: (handler: (paths: string[], x: number, y: number) => void) => Promise<() => void>;
+  send: (id: string, messageId: string, content: string, urls?: string[], files?: string[]) => Promise<SessionHistory>;
   retry: (id: string) => Promise<SessionHistory>;
   list: () => Promise<SessionSummary[]>;
   get: (id: string) => Promise<SessionHistory>;

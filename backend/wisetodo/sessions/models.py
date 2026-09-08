@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 from uuid import UUID
@@ -80,6 +81,23 @@ class ChatInput(BaseModel):
     message_id: UUID
     content: StrictStr
     urls: list[StrictStr] = Field(default_factory=list)
+    files: list[StrictStr] = Field(default_factory=list)
+
+    @field_validator("files")
+    @classmethod
+    def validate_files(cls, values: list[str]) -> list[str]:
+        result: list[str] = []
+        for value in values:
+            path = Path(value)
+            if (
+                not path.is_absolute()
+                or any(ord(char) < 32 for char in value)
+                or path.suffix.lower() not in {".pdf", ".md", ".markdown", ".txt"}
+            ):
+                raise ValueError("Expected an absolute PDF, Markdown or TXT file path")
+            if value not in result:
+                result.append(value)
+        return result
 
     @field_validator("urls")
     @classmethod
@@ -109,6 +127,6 @@ class ChatInput(BaseModel):
 
     @model_validator(mode="after")
     def nonempty(self) -> "ChatInput":
-        if not self.content.strip() and not self.urls:
-            raise ValueError("Message must contain text or a URL")
+        if not self.content.strip() and not self.urls and not self.files:
+            raise ValueError("Message must contain text, a URL or a file reference")
         return self

@@ -1,10 +1,26 @@
 import { invoke } from "@tauri-apps/api/core";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { desktopSessionApi } from "./desktop";
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
+const listen = vi.hoisted(() => vi.fn());
+vi.mock("@tauri-apps/api/webview", () => ({ getCurrentWebview: () => ({ onDragDropEvent: listen }) }));
+afterEach(() => vi.unstubAllGlobals());
 beforeEach(() => vi.resetAllMocks());
 const session = { id: "one", label: "阅读", status: "ready", created_at: "date", updated_at: "date", messages: [], tool_events: [] };
+
+it("converts native physical drop coordinates and ignores non-drop events", async () => {
+  vi.stubGlobal("window", { devicePixelRatio: 2 });
+  const stop = vi.fn();
+  listen.mockResolvedValue(stop);
+  const onDrop = vi.fn();
+  expect(await desktopSessionApi.listenFileDrops!(onDrop)).toBe(stop);
+  const handler = listen.mock.calls[0][0];
+  handler({ payload: { type: "leave" } });
+  expect(onDrop).not.toHaveBeenCalled();
+  handler({ payload: { type: "drop", paths: ["D:/book.pdf"], position: { x: 400, y: 600 } } });
+  expect(onDrop).toHaveBeenCalledExactlyOnceWith(["D:/book.pdf"], 200, 300);
+});
 
 it("uses fixed desktop commands for list create get and delete", async () => {
   vi.mocked(invoke).mockResolvedValue({ sessions: [session] });
@@ -21,6 +37,8 @@ it("uses fixed desktop commands for list create get and delete", async () => {
   expect(invoke).toHaveBeenLastCalledWith("sessions_send", { sessionId: "one", message: { message_id: "message-id", content: "Hello" } });
   await desktopSessionApi.send("one", "url-message", "", ["https://example.com"]);
   expect(invoke).toHaveBeenLastCalledWith("sessions_send", { sessionId: "one", message: { message_id: "url-message", content: "", urls: ["https://example.com"] } });
+  await desktopSessionApi.send("one", "file-message", "", [], ["D:/book.pdf"]);
+  expect(invoke).toHaveBeenLastCalledWith("sessions_send", { sessionId: "one", message: { message_id: "file-message", content: "", files: ["D:/book.pdf"] } });
   vi.mocked(invoke).mockResolvedValue({ deleted: false });
   expect(await desktopSessionApi.delete("one")).toBe(false);
   expect(invoke).toHaveBeenLastCalledWith("sessions_delete", { sessionId: "one" });
