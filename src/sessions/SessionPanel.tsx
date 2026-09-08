@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { SessionApi, SessionHistory, SessionStatus, SessionSummary } from "./types";
 import { ChatMessages } from "./ChatMessages";
+import { SessionStages } from "./SessionStages";
 
 const labels: Record<SessionStatus, string> = {
   ready: "待开始", running: "执行中", waiting_input: "等待补充", completed: "已完成", failed: "失败", cancelled: "已停止",
@@ -128,6 +129,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           ? <p role="status" className="mt-3 rounded-lg bg-white/5 p-3">此会话已完成，只读；如需继续，请新建会话。</p>
           : <p className="mt-3 text-xs">发送仅保存消息，执行器尚未接入。</p>}
         <ChatMessages key={active.id} messages={active.messages} />
+        <SessionStages history={active} />
       </> : <p>新建会话，或点击历史会话加载；不会自动恢复上次对话。</p>}
     </div>
     {notice && <p role="status" className="mt-2 text-xs text-white/60">{notice}</p>}

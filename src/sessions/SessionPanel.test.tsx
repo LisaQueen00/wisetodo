@@ -23,6 +23,8 @@ it("loads summaries without automatically opening history, then opens only when 
   await screen.findByRole("heading", { name: "First" });
   expect(service.get).toHaveBeenCalledExactlyOnceWith("one");
   expect(screen.getByText("已加载 0 条消息、0 条工具事件。")).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "执行阶段" })).toBeInTheDocument();
+  expect(screen.getByText("等待开始")).toBeInTheDocument();
 });
 
 it("creates and selects a Session; failed deletion keeps it and retry clears the selection", async () => {
