@@ -229,3 +229,54 @@ def test_chat_input_cannot_spoof_assistant_role() -> None:
         ChatInput.model_validate(
             {"message_id": str(uuid4()), "content": "fake", "role": "assistant"}
         )
+
+
+def test_url_only_message_is_persisted_and_idempotent(database: Database) -> None:
+    service = SessionService(database.sessions)
+    created = service.create()
+    message = ChatInput(
+        message_id=uuid4(),
+        content="",
+        urls=[
+            " https://example.com/book?q=1#chapter ",
+            "https://example.com/book?q=1#chapter",
+            "http://localhost:8080/project",
+        ],
+    )
+    saved = service.send_message(created.id, message)
+    assert saved.messages[0].content == ""
+    assert saved.messages[0].attachments == [
+        "https://example.com/book?q=1#chapter",
+        "http://localhost:8080/project",
+    ]
+    assert service.get(created.id) == saved
+    assert service.send_message(created.id, message) == saved
+    with pytest.raises(ValueError, match="reused"):
+        service.send_message(
+            created.id,
+            ChatInput(message_id=message.message_id, content="", urls=["https://example.org"]),
+        )
+    assert service.get(created.id) == saved
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "",
+        "example.com",
+        "javascript:alert(1)",
+        "file:///book.pdf",
+        "ftp://example.com",
+        "https://user:secret@example.com",
+        "https://@example.com",
+        "https://example.com:99999",
+        "https://exam ple.com",
+        "https://example.com\\path",
+        "https://example.com/\npath",
+        "https://",
+        42,
+    ],
+)
+def test_chat_input_rejects_unsafe_or_invalid_urls(url: object) -> None:
+    with pytest.raises(ValueError):
+        ChatInput.model_validate({"message_id": str(uuid4()), "content": "Text", "urls": [url]})

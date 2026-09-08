@@ -19,6 +19,8 @@ it("uses fixed desktop commands for list create get and delete", async () => {
   expect(invoke).toHaveBeenLastCalledWith("sessions_retry", { sessionId: "one" });
   expect(await desktopSessionApi.send("one", "message-id", "Hello")).toEqual(session);
   expect(invoke).toHaveBeenLastCalledWith("sessions_send", { sessionId: "one", message: { message_id: "message-id", content: "Hello" } });
+  await desktopSessionApi.send("one", "url-message", "", ["https://example.com"]);
+  expect(invoke).toHaveBeenLastCalledWith("sessions_send", { sessionId: "one", message: { message_id: "url-message", content: "", urls: ["https://example.com"] } });
   vi.mocked(invoke).mockResolvedValue({ deleted: false });
   expect(await desktopSessionApi.delete("one")).toBe(false);
   expect(invoke).toHaveBeenLastCalledWith("sessions_delete", { sessionId: "one" });

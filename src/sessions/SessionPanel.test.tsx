@@ -152,3 +152,32 @@ it("keeps drafts separate across Session switches", async () => {
   await screen.findByRole("heading", { name: "First" });
   expect(screen.getByRole("textbox", { name: "聊天输入" })).toHaveValue("First draft");
 });
+
+it("adds and removes URL attachments, preserves them on failure and sends without text", async () => {
+  const service = api();
+  vi.mocked(service.send).mockRejectedValueOnce(new Error("offline"))
+    .mockImplementationOnce(async (id, messageId, content, urls) => ({ ...first, messages: [{
+      id: messageId, session_id: id, position: 0, role: "user", content, attachments: urls ?? [], created_at: "date",
+    }] }));
+  render(<SessionPanel api={service} />);
+  fireEvent.click(await screen.findByRole("button", { name: "First待开始" }));
+  await screen.findByRole("heading", { name: "First" });
+  const urlInput = screen.getByLabelText("URL 附件");
+  fireEvent.change(urlInput, { target: { value: "https://example.com" } });
+  fireEvent.click(screen.getByRole("button", { name: "添加链接" }));
+  expect(screen.getByRole("button", { name: "发送" })).toBeEnabled();
+  fireEvent.click(screen.getByLabelText("移除链接 https://example.com"));
+  expect(screen.getByRole("button", { name: "发送" })).toBeDisabled();
+  fireEvent.change(urlInput, { target: { value: "https://example.org" } });
+  fireEvent.keyDown(urlInput, { key: "Enter" });
+  expect(service.send).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "发送" }));
+  await screen.findByRole("alert");
+  expect(screen.getByLabelText("移除链接 https://example.org")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "发送" }));
+  await screen.findByText("附件：https://example.org");
+  expect(vi.mocked(service.send).mock.calls[0]).toEqual(vi.mocked(service.send).mock.calls[1]);
+  expect(vi.mocked(service.send).mock.calls[1][2]).toBe("");
+  expect(vi.mocked(service.send).mock.calls[1][3]).toEqual(["https://example.org"]);
+  expect(screen.queryByRole("list", { name: "待发送链接" })).not.toBeInTheDocument();
+});

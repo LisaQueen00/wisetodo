@@ -313,9 +313,10 @@ finally:
         let history = backend.sessions_create("学习项目".to_owned()).unwrap();
         let session_id = history["session"]["id"].as_str().unwrap().to_owned();
         assert_eq!(backend.sessions_get(session_id.clone()).unwrap(), history);
-        let message = json!({"message_id":"7c2d7815-6e80-43af-a36a-ec58526ab877", "content":"你好\n消息保存测试"});
+        let message = json!({"message_id":"7c2d7815-6e80-43af-a36a-ec58526ab877", "content":"你好\n消息保存测试", "urls":["https://example.com/book"]});
         let saved = backend.sessions_send(session_id.clone(), message.clone()).unwrap();
         assert_eq!(saved["session"]["messages"][0]["content"], "你好\n消息保存测试");
+        assert_eq!(saved["session"]["messages"][0]["attachments"], json!(["https://example.com/book"]));
         assert_eq!(backend.sessions_send(session_id.clone(), message).unwrap(), saved);
         assert_eq!(backend.sessions_get(session_id.clone()).unwrap(), saved);
         assert_eq!(backend.sessions_delete(session_id).unwrap(), json!({"deleted":true}));

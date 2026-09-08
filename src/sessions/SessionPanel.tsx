@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { SessionApi, SessionHistory, SessionStatus, SessionSummary } from "./types";
 import { ChatMessages } from "./ChatMessages";
 import { SessionStages } from "./SessionStages";
+import { UrlAttachments } from "./UrlAttachments";
 
 const labels: Record<SessionStatus, string> = {
   ready: "待开始", running: "执行中", waiting_input: "等待补充", completed: "已完成", failed: "失败", cancelled: "已停止",
@@ -19,7 +20,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
   const request = useRef(0);
   const mutation = useRef(false);
   const composing = useRef(false);
-  const [drafts, setDrafts] = useState<Record<string, { text: string; messageId: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { text: string; messageId: string; urls: string[] }>>({});
   const [notice, setNotice] = useState("");
   const draft = active ? drafts[active.id] : undefined;
   const canInput = !!active && active.status !== "completed" && active.status !== "running";
@@ -48,7 +49,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
   }
   async function change(kind: "create" | "delete" | "retry" | "send", id?: string) {
     if (mutation.current) return;
-    if (kind === "send" && (!canInput || busy || !listReady || !draft?.text.trim() || composing.current)) return;
+    if (kind === "send" && (!canInput || busy || !listReady || (!draft?.text.trim() && !draft?.urls.length) || composing.current)) return;
     mutation.current = true;
     setMutating(true);
     const ticket = ++request.current;
@@ -63,7 +64,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           setActive(created); setLabel("");
         }
       } else if (kind === "send" && id && draft) {
-        const saved = await api.send(id, draft.messageId, draft.text);
+        const saved = await api.send(id, draft.messageId, draft.text, draft.urls);
         if (ticket === request.current) {
           setActive(saved);
           setRows((previous) => [saved, ...previous.filter((row) => row.id !== id)]);
@@ -134,6 +135,11 @@ export function SessionPanel({ api }: { api: SessionApi }) {
     </div>
     {notice && <p role="status" className="mt-2 text-xs text-white/60">{notice}</p>}
     <form aria-label="发送消息" className="mt-4 shrink-0" onSubmit={(event) => { event.preventDefault(); void change("send", active?.id); }}>
+      {active && <UrlAttachments key={active.id} urls={draft?.urls ?? []} disabled={!canInput || busy || !listReady}
+        onChange={(urls) => {
+          const messageId = crypto.randomUUID();
+          setDrafts((previous) => ({ ...previous, [active.id]: { text: previous[active.id]?.text ?? "", urls, messageId } }));
+        }} />}
       <textarea disabled={!canInput || busy || !listReady} readOnly={active?.status === "completed"}
         aria-label={active?.status === "completed" ? "聊天输入（会话已完成，只读）" : "聊天输入"}
         placeholder={!active ? "请先新建或选择会话" : active.status === "completed" ? "此会话已完成，请新建会话" : active.status === "running" ? "正在执行，请等待" : "输入消息；Shift+Enter 换行"}
@@ -142,7 +148,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           if (!active) return;
           const text = event.target.value;
           const messageId = crypto.randomUUID();
-          setDrafts((previous) => ({ ...previous, [active.id]: { text, messageId } }));
+          setDrafts((previous) => ({ ...previous, [active.id]: { text, messageId, urls: previous[active.id]?.urls ?? [] } }));
         }}
         onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}
         onKeyDown={(event) => {
@@ -151,7 +157,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           }
         }}
         className="w-full resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm placeholder:text-white/30" />
-      {canInput && <button disabled={busy || !listReady || !draft?.text.trim()} className="mt-2 rounded-lg bg-violet-400/15 px-4 py-2 text-sm disabled:opacity-30">发送</button>}
+      {canInput && <button disabled={busy || !listReady || (!draft?.text.trim() && !draft?.urls.length)} className="mt-2 rounded-lg bg-violet-400/15 px-4 py-2 text-sm disabled:opacity-30">发送</button>}
     </form>
   </>;
 }

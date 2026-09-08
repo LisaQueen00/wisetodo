@@ -1,9 +1,18 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
+from urllib.parse import urlsplit
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    StrictStr,
+    field_validator,
+    model_validator,
+)
 
 
 class SessionStatus(StrEnum):
@@ -70,10 +79,36 @@ class ChatInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     message_id: UUID
     content: StrictStr
+    urls: list[StrictStr] = Field(default_factory=list)
 
-    @field_validator("content")
+    @field_validator("urls")
     @classmethod
-    def nonblank(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("Message cannot be blank")
-        return value
+    def validate_urls(cls, values: list[str]) -> list[str]:
+        result: list[str] = []
+        for raw in values:
+            value = raw.strip()
+            if any(
+                char.isspace() or ord(char) < 32 or ord(char) == 127 or char == "\\"
+                for char in value
+            ):
+                raise ValueError("URL contains invalid characters")
+            parsed = urlsplit(value)
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not value.lower().startswith(("http://", "https://"))
+                or not parsed.hostname
+                or parsed.username is not None
+                or parsed.password is not None
+            ):
+                raise ValueError("Expected an HTTP(S) URL without credentials")
+            _ = parsed.port  # Reject malformed or out-of-range ports.
+            HttpUrl(value)  # Validate host syntax without normalizing the stored reference.
+            if value not in result:
+                result.append(value)
+        return result
+
+    @model_validator(mode="after")
+    def nonempty(self) -> "ChatInput":
+        if not self.content.strip() and not self.urls:
+            raise ValueError("Message must contain text or a URL")
+        return self

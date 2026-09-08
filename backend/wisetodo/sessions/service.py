@@ -97,13 +97,14 @@ class SessionService:
                 if (
                     existing.role != "user"
                     or existing.content != message.content
-                    or existing.attachments
+                    or existing.attachments != message.urls
                 ):
                     raise ValueError("Message ID reused for different content")
             else:
                 record.messages.append(
                     MessageRecord(
                         id=str(message.message_id),
+                        attachments=list(message.urls),
                         role="user",
                         content=message.content,
                         position=max((row.position for row in record.messages), default=-1) + 1,

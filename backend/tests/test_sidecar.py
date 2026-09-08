@@ -41,13 +41,18 @@ def test_chat_send_persists_across_restart_and_deduplicates(tmp_path: Path) -> N
     send = request("send", "user.sessions.send")
     send["params"] = {
         "session_id": created["id"],
-        "message": {"message_id": str(uuid4()), "content": "第一行\n第二行 <script>"},
+        "message": {
+            "message_id": str(uuid4()),
+            "content": "第一行\n第二行 <script>",
+            "urls": ["https://example.com/book"],
+        },
     }
     result = run_sidecar(path, [send, send], tmp_path)
     assert result.returncode == 0, result.stderr
     first, second = map(json.loads, result.stdout.splitlines())
     assert first["result"] == second["result"]
     assert len(first["result"]["session"]["messages"]) == 1
+    assert first["result"]["session"]["messages"][0]["attachments"] == ["https://example.com/book"]
     read = request("read", "sessions.get")
     read["params"] = {"session_id": created["id"]}
     restarted = run_sidecar(path, [read], tmp_path)
