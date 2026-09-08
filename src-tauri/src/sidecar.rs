@@ -48,6 +48,10 @@ impl TodoBackend {
         self.call("user.sessions.delete", json!({"session_id": session_id}))
     }
 
+    pub fn sessions_retry(&self, session_id: String) -> Result<Value, String> {
+        self.call("user.sessions.retry", json!({"session_id": session_id}))
+    }
+
     pub fn create(&self, todo: Value) -> Result<Value, String> {
         self.call("user.todos.create", json!({"todo": todo}))
     }

@@ -30,7 +30,7 @@ async def dispatch(
     if request.method in METHODS:
         if session_service is None:
             raise RuntimeError("Session service is not initialized")
-        return dispatch_session(request, session_service)
+        return await dispatch_session(request, session_service)
     if request.method == "health":
         return {"status": "ok"}
     if request.method == "todos.list":

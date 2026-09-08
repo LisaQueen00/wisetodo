@@ -1,10 +1,21 @@
+import asyncio
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import UTC, datetime
+from uuid import uuid4
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from wisetodo.sessions.models import SessionHistory, SessionStatus, SessionSummary
+from wisetodo.sessions.retry import (
+    RetryExecutionError,
+    RetryExecutor,
+    RetryOutcome,
+    RetryRequest,
+    RetryUnavailableError,
+)
+from wisetodo.sessions.state_machine import SessionEvent, next_status
 from wisetodo.sessions.tables import SessionRecord
 
 
@@ -15,8 +26,54 @@ class SessionReadOnlyError(PermissionError):
 
 
 class SessionService:
-    def __init__(self, sessions: sessionmaker[Session]) -> None:
+    def __init__(
+        self, sessions: sessionmaker[Session], retry_executor: RetryExecutor | None = None
+    ) -> None:
         self._sessions = sessions
+        self._retry_executor = retry_executor
+        self._active_retries: dict[str, str] = {}
+
+    async def retry(self, session_id: str) -> SessionHistory:
+        run_id = str(uuid4())
+        with self.write_history(session_id) as record:
+            target = next_status(SessionStatus(record.status), SessionEvent.RETRY)
+            if session_id in self._active_retries:
+                raise ValueError("Session already has an active retry")
+            if self._retry_executor is None:
+                raise RetryUnavailableError("Retry executor is not configured")
+            if not any(message.role == "user" for message in record.messages):
+                raise ValueError("Session has no retained user input")
+            history = SessionHistory.model_validate(record)
+            record.status = target
+            record.updated_at = datetime.now(UTC)
+        self._active_retries[session_id] = run_id
+        try:
+            try:
+                outcome = await self._retry_executor(RetryRequest(run_id=run_id, history=history))
+                outcome = RetryOutcome.model_validate(outcome)
+            except asyncio.CancelledError:
+                self._finish_retry(session_id, run_id, SessionEvent.CANCEL)
+                raise
+            except Exception as error:
+                self._finish_retry(session_id, run_id, SessionEvent.FAIL)
+                raise RetryExecutionError("Retry execution failed") from error
+            self._finish_retry(session_id, run_id, outcome.event)
+            result = self.get(session_id)
+            if result is None:
+                raise LookupError("Session not found")
+            return result
+        finally:
+            if self._active_retries.get(session_id) == run_id:
+                del self._active_retries[session_id]
+
+    def _finish_retry(self, session_id: str, run_id: str, event: SessionEvent) -> None:
+        if self._active_retries.get(session_id) != run_id:
+            raise ValueError("Stale retry result")
+        with self.write_history(session_id) as record:
+            if record.status != SessionStatus.RUNNING:
+                raise ValueError("Session is no longer running")
+            record.status = next_status(SessionStatus(record.status), event)
+            record.updated_at = datetime.now(UTC)
 
     def create(self, label: str = "") -> SessionHistory:
         if not isinstance(label, str):

@@ -13,6 +13,7 @@ export interface ToolEvent {
 }
 export interface SessionHistory extends SessionSummary { messages: Message[]; tool_events: ToolEvent[] }
 export interface SessionApi {
+  retry: (id: string) => Promise<SessionHistory>;
   list: () => Promise<SessionSummary[]>;
   get: (id: string) => Promise<SessionHistory>;
   create: (label: string) => Promise<SessionHistory>;

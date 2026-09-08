@@ -37,7 +37,7 @@ export function SessionPanel({ api }: { api: SessionApi }) {
     } catch { if (ticket === request.current) setError("加载会话失败，请重新选择或刷新历史。"); }
     finally { if (ticket === request.current) setBusy(false); }
   }
-  async function change(kind: "create" | "delete", id?: string) {
+  async function change(kind: "create" | "delete" | "retry", id?: string) {
     if (mutation.current) return;
     mutation.current = true;
     setMutating(true);
@@ -51,6 +51,12 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           setRows((previous) => [created, ...previous.filter((row) => row.id !== created.id)]);
           setActive(created); setLabel("");
         }
+      } else if (kind === "retry" && id) {
+        const retried = await api.retry(id);
+        if (ticket === request.current) {
+          setActive(retried);
+          setRows((previous) => [retried, ...previous.filter((row) => row.id !== retried.id)]);
+        }
       } else if (id) {
         await api.delete(id);
         if (ticket === request.current) {
@@ -58,7 +64,11 @@ export function SessionPanel({ api }: { api: SessionApi }) {
           setActive((previous) => previous?.id === id ? null : previous);
         }
       }
-    } catch { if (ticket === request.current) setError(kind === "create" ? "新建会话失败，请重试。" : "删除会话失败，请重试。"); }
+    } catch (failure) {
+      if (ticket === request.current) setError(kind === "retry"
+        ? (typeof failure === "string" ? failure : "重试失败，请刷新历史检查会话状态。")
+        : kind === "create" ? "新建会话失败，请重试。" : "删除会话失败，请重试。");
+    }
     finally { mutation.current = false; if (ticket === request.current) { setBusy(false); setMutating(false); } }
   }
 
@@ -89,6 +99,11 @@ export function SessionPanel({ api }: { api: SessionApi }) {
         <h3 className="text-white">{active.label || "新会话"}</h3>
         <p className="mt-2">状态：{labels[active.status]}</p>
         <p>已加载 {active.messages.length} 条消息、{active.tool_events.length} 条工具事件。</p>
+        {(active.status === "failed" || active.status === "cancelled") && <div className="mt-3">
+          <button disabled={busy || !listReady} onClick={() => { void change("retry", active.id); }}
+            className="rounded-lg bg-white/10 px-3 py-2 disabled:opacity-30">重试</button>
+          <p className="mt-2 text-xs text-white/50">复用原输入和附件。当前执行器尚未接入，暂不能实际执行。</p>
+        </div>}
         {active.status === "completed"
           ? <p role="status" className="mt-3 rounded-lg bg-white/5 p-3">此会话已完成，只读；如需继续，请新建会话。</p>
           : <p className="mt-3">消息展示与发送功能待接入。</p>}

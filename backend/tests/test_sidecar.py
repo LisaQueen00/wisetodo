@@ -32,6 +32,34 @@ def request(request_id: str, method: str) -> dict[str, Any]:
     return {"type": "request", "requestId": request_id, "method": method, "params": {}}
 
 
+def test_retry_without_executor_preserves_failed_session(tmp_path: Path) -> None:
+    from wisetodo.sessions.service import SessionService
+    from wisetodo.sessions.tables import MessageRecord, SessionRecord
+
+    path = tmp_path / "retry-ipc.db"
+    database = initialize_database(path)
+    try:
+        service = SessionService(database.sessions)
+        created = service.create()
+        with database.sessions.begin() as session:
+            record = session.get_one(SessionRecord, created.id)
+            record.status = "failed"
+            record.messages = [MessageRecord(position=0, role="user", content="Original input")]
+        original = service.get(created.id)
+        assert original is not None
+    finally:
+        database.dispose()
+    retry = request("retry", "user.sessions.retry")
+    retry["params"] = {"session_id": created.id}
+    read = request("read", "sessions.get")
+    read["params"] = retry["params"]
+    result = run_sidecar(path, [retry, read], tmp_path)
+    assert result.returncode == 0, result.stderr
+    failure, loaded = map(json.loads, result.stdout.splitlines())
+    assert failure["error"]["code"] == "SESSION_RETRY_UNAVAILABLE"
+    assert loaded["result"]["session"] == original.model_dump(mode="json")
+
+
 def test_session_crud_over_real_sidecar(tmp_path: Path) -> None:
     path = tmp_path / "session-ipc.db"
     create = request("create", "user.sessions.create")

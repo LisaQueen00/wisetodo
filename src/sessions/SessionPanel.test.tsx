@@ -9,7 +9,7 @@ afterEach(cleanup);
 const first: SessionHistory = { id: "one", label: "First", status: "ready", created_at: "2026-01-01", updated_at: "2026-01-01", messages: [], tool_events: [] };
 const second = { ...first, id: "two", label: "Second" };
 function api(): SessionApi {
-  return { list: vi.fn(async () => [first, second]), get: vi.fn(async (id) => id === first.id ? first : second),
+  return { retry: vi.fn(), list: vi.fn(async () => [first, second]), get: vi.fn(async (id) => id === first.id ? first : second),
     create: vi.fn(async (label) => ({ ...first, id: "new", label })), delete: vi.fn(async () => true) };
 }
 
@@ -86,4 +86,25 @@ it("marks completed history read-only while allowing deletion and a new independ
   expect(screen.queryByText("此会话已完成，只读；如需继续，请新建会话。")).not.toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: "聊天输入（待接入）" })).not.toHaveAttribute("readonly");
   expect(screen.getByRole("button", { name: "First已完成" })).toBeInTheDocument();
+});
+
+it.each(["failed", "cancelled"] as const)("retries %s history, preserves it on errors and prevents duplicate clicks", async (status) => {
+  const service = api();
+  const stopped = { ...first, status };
+  vi.mocked(service.list).mockResolvedValue([stopped]);
+  vi.mocked(service.get).mockResolvedValue(stopped);
+  let reject!: (reason: string) => void;
+  vi.mocked(service.retry).mockReturnValueOnce(new Promise((_resolve, fail) => { reject = fail; }))
+    .mockResolvedValueOnce({ ...first, status: "waiting_input" });
+  render(<SessionPanel api={service} />);
+  fireEvent.click(await screen.findByRole("button", { name: status === "failed" ? "First失败" : "First已停止" }));
+  fireEvent.click(await screen.findByRole("button", { name: "重试" }));
+  expect(screen.getByRole("button", { name: "重试" })).toBeDisabled();
+  await act(async () => { reject("执行器尚未接入，原状态已保留。"); });
+  expect(screen.getByRole("alert")).toHaveTextContent("执行器尚未接入");
+  expect(screen.getByRole("heading", { name: "First" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "重试" }));
+  await screen.findByText("状态：等待补充");
+  expect(service.retry).toHaveBeenCalledWith("one");
+  expect(screen.queryByRole("button", { name: "重试" })).not.toBeInTheDocument();
 });

@@ -4,10 +4,17 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.messages import IpcRequest
+from wisetodo.sessions.retry import RetryExecutionError, RetryUnavailableError
 from wisetodo.sessions.service import SessionService
 
 METHODS = frozenset(
-    {"sessions.list", "sessions.get", "user.sessions.create", "user.sessions.delete"}
+    {
+        "sessions.list",
+        "sessions.get",
+        "user.sessions.create",
+        "user.sessions.delete",
+        "user.sessions.retry",
+    }
 )
 
 
@@ -17,7 +24,7 @@ class SessionRequestError(Exception):
         super().__init__(error.message)
 
 
-def dispatch_session(request: IpcRequest, service: SessionService) -> dict[str, Any]:
+async def dispatch_session(request: IpcRequest, service: SessionService) -> dict[str, Any]:
     try:
         if request.method == "sessions.list":
             return {"sessions": [row.model_dump(mode="json") for row in service.list()]}
@@ -31,16 +38,39 @@ def dispatch_session(request: IpcRequest, service: SessionService) -> dict[str, 
             raise ValueError("Missing Session ID")
         if request.method == "user.sessions.delete":
             return {"deleted": service.delete(session_id)}
+        if request.method == "user.sessions.retry":
+            return {"session": (await service.retry(session_id)).model_dump(mode="json")}
         history = service.get(session_id)
         if history is None:
             raise LookupError("Session not found")
         return {"session": history.model_dump(mode="json")}
+    except RetryUnavailableError as error:
+        raise SessionRequestError(
+            WiseTodoError(
+                code=ErrorCode.SESSION_RETRY_UNAVAILABLE,
+                message="Retry executor unavailable",
+                user_message="执行器尚未接入，暂时无法重试；原会话状态和历史已保留。",
+            )
+        ) from error
+    except RetryExecutionError as error:
+        raise SessionRequestError(
+            WiseTodoError(
+                code=ErrorCode.SESSION_RETRY_FAILED,
+                message="Retry execution failed",
+                user_message="重试执行失败，历史已保留；可再次重试。",
+                retryable=True,
+            )
+        ) from error
     except ValueError as error:
         raise SessionRequestError(
             WiseTodoError(
                 code=ErrorCode.SESSION_VALIDATION_FAILED,
                 message="Invalid Session operation",
-                user_message="会话参数无效，或会话仍在执行；请检查并停止执行后重试。",
+                user_message=(
+                    "只能重试有用户输入的失败或已取消会话，请刷新历史检查状态。"
+                    if request.method == "user.sessions.retry"
+                    else "会话参数无效，或会话仍在执行；请检查并停止执行后重试。"
+                ),
             )
         ) from error
     except LookupError as error:
