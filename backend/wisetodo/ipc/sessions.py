@@ -2,6 +2,7 @@ from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
+from wisetodo.agent.errors import KNOWN_MODEL_ERRORS, map_agent_error
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.messages import IpcRequest
 from wisetodo.sessions.models import ChatInput
@@ -64,6 +65,8 @@ async def dispatch_session(request: IpcRequest, service: SessionService) -> dict
             )
         ) from error
     except RetryExecutionError as error:
+        if isinstance(error.__cause__, KNOWN_MODEL_ERRORS):
+            raise SessionRequestError(map_agent_error(error.__cause__)) from None
         raise SessionRequestError(
             WiseTodoError(
                 code=ErrorCode.SESSION_RETRY_FAILED,

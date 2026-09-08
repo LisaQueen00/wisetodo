@@ -8,6 +8,7 @@ from typing import Any
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
+from wisetodo.agent.errors import KNOWN_MODEL_ERRORS, map_agent_error
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.events import request_id
 from wisetodo.ipc.messages import IpcCancel, IpcFailure, IpcRequest, IpcResponse
@@ -128,12 +129,10 @@ async def run_stdio_server(
         request_id.set(message.request_id)
         try:
             result = await dispatch(message, todo_service, session_service, settings_service)
-        except asyncio.CancelledError:
-            error = WiseTodoError(
-                code=ErrorCode.RUN_CANCELLED,
-                message="Request cancelled",
-                user_message="已停止执行。",
-            )
+        except asyncio.CancelledError as failure:
+            error = map_agent_error(failure)
+        except KNOWN_MODEL_ERRORS as failure:
+            error = map_agent_error(failure)
         except (SessionRequestError, SettingsRequestError) as failure:
             error = failure.error
         except SessionReadOnlyError:
