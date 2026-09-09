@@ -35,6 +35,7 @@ from wisetodo.settings.storage import SettingsStorageError
 from wisetodo.skills import SkillSource
 from wisetodo.skills.inputs import input_types
 from wisetodo.todos import TodoService
+from wisetodo.tools.model_content import model_tool_results
 from wisetodo.tools.registry import ToolRegistry
 from wisetodo.tools.results import execute_results
 from wisetodo.tools.source import load_tools
@@ -188,6 +189,7 @@ class AgentRuntime:
                                 result.calls,
                                 observer=tool_event,
                             )
+                        outputs = model_tool_results(outputs)
                         if self._mode == "native":
                             messages.append(
                                 ModelMessage(

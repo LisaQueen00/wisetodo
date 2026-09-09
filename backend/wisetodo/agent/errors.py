@@ -11,6 +11,7 @@ from wisetodo.agent.tool_calls import InvalidToolCallsError
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.files.references import FileReferenceError
 from wisetodo.model.provider import ModelCapabilityError, ModelRequestError
+from wisetodo.tools.model_content import ToolResultBudgetError
 from wisetodo.tools.transport import ToolTransportError
 
 KNOWN_MODEL_ERRORS = (
@@ -71,6 +72,10 @@ def map_agent_error(
             else "模型请求失败，请检查连接设置、服务状态后重试。"
         )
         retryable = isinstance(error, ModelRequestError)
+    elif isinstance(error, ToolResultBudgetError):
+        code = ErrorCode.CONTEXT_TOO_LARGE
+        message = "Tool result context too large"
+        user_message = "工具结果超出上下文预算，请缩小资料范围后重试。"
     elif isinstance(error, ToolTransportError):
         code = ErrorCode.TOOL_EXECUTION_FAILED
         message = "Tool execution failed"

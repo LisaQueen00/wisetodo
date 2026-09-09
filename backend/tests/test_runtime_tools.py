@@ -14,7 +14,8 @@ from wisetodo.todos import TodoService
 
 
 @pytest.mark.parametrize("mode", ["native", "prompt_compat"])
-async def test_runtime_real_stdio_and_fake_model_commit(tmp_path, mode):
+@pytest.mark.parametrize("oversized", [False, True])
+async def test_runtime_real_stdio_and_fake_model_commit(tmp_path, mode, oversized):
     skill_path = tmp_path / "skills" / "guide" / "SKILL.md"
     skill_path.parent.mkdir(parents=True)
     skill_path.write_text(
@@ -71,7 +72,9 @@ async def test_runtime_real_stdio_and_fake_model_commit(tmp_path, mode):
                             ToolCall(
                                 id="call-1",
                                 name="echo",
-                                arguments='{"value":"verified-local"}',
+                                arguments=json.dumps(
+                                    {"value": "x" * 20_000 if oversized else "verified-local"}
+                                ),
                             ),
                         ),
                     )
@@ -84,14 +87,21 @@ async def test_runtime_real_stdio_and_fake_model_commit(tmp_path, mode):
                                 {
                                     "callId": "call-1",
                                     "tool": "echo",
-                                    "arguments": {"value": "verified-local"},
+                                    "arguments": {
+                                        "value": "x" * 20_000 if oversized else "verified-local"
+                                    },
                                 }
                             ],
                         }
                     ),
                 )
             assert request.tools == ()
-            assert "verified-local" in request.model_dump_json()
+            if oversized:
+                # Inspect result message only; the call arguments also appear in history.
+                assert "content_budget" in request.messages[-1].content
+                assert "x" * 20_000 not in request.messages[-1].content
+            else:
+                assert "verified-local" in request.model_dump_json()
             return ModelResponse(content=json.dumps(create_output()), finish_reason="stop")
 
     db = initialize_database(tmp_path / "test.db")
