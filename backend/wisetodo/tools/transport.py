@@ -12,6 +12,7 @@ from pydantic import JsonValue, TypeAdapter
 
 from wisetodo.tools.config import HttpTransport, LocalTransport
 from wisetodo.tools.registry import ToolRegistry
+from wisetodo.tools.validation import ToolArgumentsError, validate_arguments
 
 LocalHandler = Callable[[dict[str, JsonValue]], Awaitable[JsonValue]]
 McpSessionFactory = Callable[[], AbstractAsyncContextManager[ClientSession]]
@@ -47,6 +48,7 @@ class ToolExecutor:
             raise ToolTransportError("unknown_tool")
         try:
             args = copy.deepcopy(arguments)
+            validate_arguments(config.input_schema, args)
             async with asyncio.timeout(self._timeout):
                 transport = config.transport
                 if isinstance(transport, LocalTransport):
@@ -74,6 +76,8 @@ class ToolExecutor:
             raise
         except ToolTransportError:
             raise
+        except ToolArgumentsError:
+            raise ToolTransportError("invalid_tool_arguments") from None
         except TimeoutError:
             raise ToolTransportError("tool_timeout") from None
         except Exception:

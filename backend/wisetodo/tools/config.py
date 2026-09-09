@@ -14,6 +14,7 @@ from pydantic import (
 )
 
 from wisetodo.model.contracts import ToolDefinition
+from wisetodo.tools.validation import validate_schema
 
 Name = Annotated[StrictStr, Field(pattern=r"^[a-zA-Z0-9_-]{1,64}$")]
 
@@ -83,9 +84,9 @@ class ToolConfig(ConfigModel):
     @field_validator("input_schema")
     @classmethod
     def validate_schema_root(cls, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
-        # Full JSON Schema and invocation argument validation belong to the executor.
         if value.get("type") != "object":
             raise ValueError("Tool input schema must declare type object")
+        validate_schema(value)
         return value
 
     def to_definition(self) -> ToolDefinition:

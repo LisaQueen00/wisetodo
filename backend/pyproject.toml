@@ -11,6 +11,7 @@ dependencies = [
   "alembic>=1.16,<2",
   "httpx>=0.28,<1",
   "httpx2>=2.12,<3",
+  "jsonschema>=4.25,<5",
   "openai>=3.5,<4",
   "keyring>=25.6,<26",
   "langchain-openai>=0.3,<2",
