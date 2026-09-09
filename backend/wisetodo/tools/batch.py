@@ -20,8 +20,8 @@ async def execute_batch(
 
     Independence and read-only permission are the caller's responsibility. This
     layer neither infers dependencies nor retries calls. Per-call validation and
-    timeouts remain with ToolExecutor. Fail-fast sibling cancellation is a later
-    step; currently failures are raised after every sibling has settled.
+    timeouts remain with ToolExecutor. The first observed failure cancels unfinished
+    siblings; cleanup finishes before that original exception is propagated.
     """
     snapshot = ToolCallsResult.model_validate(
         {"type": "tool_calls", "calls": [call.model_dump() for call in calls]}
@@ -30,13 +30,9 @@ async def execute_batch(
         asyncio.create_task(executor.execute(call.tool, call.arguments)) for call in snapshot.calls
     ]
     try:
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        for result in results:
-            if isinstance(result, BaseException):
-                raise result
-        return tuple(result for result in results if not isinstance(result, BaseException))
+        return tuple(await asyncio.gather(*tasks))
     finally:
-        # Never leave owned tasks running if the caller cancels the batch.
+        # gather propagates failures without cancelling siblings; explicitly own cleanup.
         for task in tasks:
             if not task.done():
                 task.cancel()

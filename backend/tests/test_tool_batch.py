@@ -80,18 +80,71 @@ async def test_caller_cancellation_cleans_up_all_children():
     assert sorted(finished) == [0, 1]
 
 
-async def test_failure_is_propagated_after_siblings_finish_without_retry():
-    completed = []
+@pytest.mark.parametrize("failure", [ValueError("failure"), TimeoutError("timeout")])
+async def test_first_failure_cancels_siblings_and_waits_for_cleanup(failure):
+    started = asyncio.Event()
+    cleaned = []
+    invocations = []
 
     class Runner:
         async def execute(self, name, arguments):
             index = arguments["index"]
+            invocations.append(index)
             if index == 0:
-                raise ValueError("failure")
-            await asyncio.sleep(0)
-            completed.append(index)
-            return None
+                await started.wait()
+                raise failure
+            started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                await asyncio.sleep(0)
+                cleaned.append(index)
 
-    with pytest.raises(ValueError, match="failure"):
-        await execute_batch(Runner(), calls())
-    assert completed == [1]
+    async with asyncio.timeout(2):
+        with pytest.raises(type(failure)) as caught:
+            await execute_batch(Runner(), calls())
+    assert caught.value is failure
+    assert cleaned == [1]
+    assert sorted(invocations) == [0, 1]
+
+
+async def test_cleanup_failure_does_not_replace_original_error():
+    started = asyncio.Event()
+    original = ValueError("original")
+
+    class Runner:
+        async def execute(self, name, arguments):
+            if arguments["index"] == 0:
+                await started.wait()
+                raise original
+            started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                raise RuntimeError("cleanup")
+
+    async with asyncio.timeout(2):
+        with pytest.raises(ValueError) as caught:
+            await execute_batch(Runner(), calls())
+    assert caught.value is original
+
+
+async def test_child_cancellation_cancels_sibling():
+    started = asyncio.Event()
+    cleaned = []
+
+    class Runner:
+        async def execute(self, name, arguments):
+            if arguments["index"] == 0:
+                await started.wait()
+                raise asyncio.CancelledError
+            started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cleaned.append(True)
+
+    async with asyncio.timeout(2):
+        with pytest.raises(asyncio.CancelledError):
+            await execute_batch(Runner(), calls())
+    assert cleaned == [True]
