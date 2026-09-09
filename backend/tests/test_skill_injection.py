@@ -19,7 +19,7 @@ def skill(name: str = "reading", body: str = "按真实章节拆分。") -> Vali
             Path("private") / name / "SKILL.md",
             name,
             f"name: {name}\ndescription: private description\naccepts: [pdf]\n"
-            "tools: {required: [parse_pdf]}\n",
+            "tools: {optional: [parse_pdf]}\n",
             body,
         )
     )

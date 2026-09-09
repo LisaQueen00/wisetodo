@@ -25,3 +25,17 @@ def select_skills(
     if not types:
         return ()
     return tuple(skill for skill in skills if types.intersection(skill.metadata.accepts))
+
+
+def filter_available_skills(
+    skills: Iterable[ValidatedSkill], tool_names: Iterable[str]
+) -> tuple[ValidatedSkill, ...]:
+    """Keep candidates whose required tools are all in the caller's Run snapshot.
+
+    Optional dependencies never disable a Skill. This checks names only, not tool
+    health or execution permissions; the caller supplies vetted available tools.
+    """
+    if isinstance(tool_names, str):
+        raise ValueError("Expected a collection of tool names")
+    available = set(tool_names)
+    return tuple(skill for skill in skills if available.issuperset(skill.metadata.required_tools))

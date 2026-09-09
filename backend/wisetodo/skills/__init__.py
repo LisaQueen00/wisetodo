@@ -8,7 +8,7 @@ from wisetodo.skills.metadata import (
     load_skills,
     validate_skill_document,
 )
-from wisetodo.skills.selection import select_skills
+from wisetodo.skills.selection import filter_available_skills, select_skills
 
 __all__ = [
     "SkillDocument",
@@ -21,4 +21,5 @@ __all__ = [
     "load_skills",
     "validate_skill_document",
     "select_skills",
+    "filter_available_skills",
 ]

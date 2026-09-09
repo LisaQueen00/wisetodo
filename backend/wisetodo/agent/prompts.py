@@ -8,6 +8,7 @@ from wisetodo.agent.results import agent_result_schema
 from wisetodo.model.contracts import ModelMessage, ModelRequest, ToolDefinition
 from wisetodo.skills.injection import render_skill_guidance
 from wisetodo.skills.metadata import ValidatedSkill
+from wisetodo.skills.selection import filter_available_skills
 
 CORE_RULES = """你是 WiseTodo 的任务规划助手。
 理解用户目的，必要时选择信息工具，最终提出一个 Todo 操作。
@@ -52,7 +53,9 @@ def build_agent_request(
 ) -> ModelRequest:
     """Caller supplies this Session's history and vetted read-only tool definitions.
 
-    Caller supplies selected Skill snapshots; filesystem loading is separate.
+    Caller supplies selected Skill snapshots and this Run's available tools, also
+    during final phase. Phase restrictions do not imply missing dependencies.
+    Filesystem loading is separate.
     The application schema below is instruction text, not strict API schema.
     """
     if phase not in {"decision", "final"}:
@@ -81,7 +84,7 @@ def build_agent_request(
         )
     prompt = (
         rules
-        + render_skill_guidance(skills)
+        + render_skill_guidance(filter_available_skills(skills, (tool.name for tool in tools)))
         + "\n"
         + stage
         + "\nAgentResult Schema：\n"
