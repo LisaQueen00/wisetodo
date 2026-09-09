@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from wisetodo.agent.errors import KNOWN_MODEL_ERRORS, AgentExecutionError, map_agent_error
 from wisetodo.errors import ErrorCode, WiseTodoError
+from wisetodo.files.references import FileReferenceError
 from wisetodo.ipc.messages import IpcRequest
 from wisetodo.sessions.models import ChatInput
 from wisetodo.sessions.retry import RetryExecutionError, RetryUnavailableError
@@ -81,6 +82,8 @@ async def dispatch_session(request: IpcRequest, service: SessionService) -> dict
                 retryable=True,
             )
         ) from error
+    except FileReferenceError as error:
+        raise SessionRequestError(map_agent_error(error)) from None
     except ValueError as error:
         raise SessionRequestError(
             WiseTodoError(

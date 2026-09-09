@@ -24,6 +24,7 @@ from wisetodo.agent.results import (
     UpdateOperation,
 )
 from wisetodo.errors import ErrorCode, WiseTodoError
+from wisetodo.files.references import FileReferences
 from wisetodo.ipc.events import emit_run
 from wisetodo.model.contracts import ModelMessage
 from wisetodo.model.runtime import RunProviderScope
@@ -117,6 +118,14 @@ class AgentRuntime:
                 snapshot = target.model_dump(mode="json") if target else None
                 history = self._sessions.get(session_id)
                 assert history is not None
+                # Do not check attachments on pending-operation-only commit retries.
+                FileReferences(
+                    attachment
+                    for row in history.messages
+                    if row.role == "user"
+                    for attachment in row.attachments
+                    if not attachment.lower().startswith(("http://", "https://"))
+                )
                 candidates = (
                     self._skill_source.begin_run().candidates(
                         input_types(history.messages), registry.names

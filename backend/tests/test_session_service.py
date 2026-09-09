@@ -307,7 +307,7 @@ def test_missing_files_and_directories_do_not_save_messages(
     directory = tmp_path / "folder.pdf"
     directory.mkdir()
     for file in [tmp_path / "missing.pdf", directory]:
-        with pytest.raises(ValueError, match="regular file"):
+        with pytest.raises(ValueError, match="file_unavailable"):
             service.send_message(
                 created.id, ChatInput(message_id=uuid4(), content="Hi", files=[str(file)])
             )

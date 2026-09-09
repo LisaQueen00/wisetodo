@@ -216,7 +216,9 @@ class SessionService:
                     raise ValueError("Message ID reused for different content")
             else:
                 if any(not Path(path).is_file() for path in message.files):
-                    raise ValueError("Attachment is missing or is not a regular file")
+                    from wisetodo.files.references import FileReferenceError
+
+                    raise FileReferenceError("file_unavailable")
                 record.messages.append(
                     MessageRecord(
                         id=str(message.message_id),

@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from wisetodo.agent.generation import InvalidAgentOutputError, UnusableModelResponseError
 from wisetodo.agent.tool_calls import InvalidToolCallsError
 from wisetodo.errors import ErrorCode, WiseTodoError
+from wisetodo.files.references import FileReferenceError
 from wisetodo.model.provider import ModelCapabilityError, ModelRequestError
 from wisetodo.tools.transport import ToolTransportError
 
@@ -43,6 +44,20 @@ def map_agent_error(
     retryable = False
     if isinstance(error, asyncio.CancelledError):
         code, message, user_message = ErrorCode.RUN_CANCELLED, "Request cancelled", "已停止执行。"
+    elif isinstance(error, FileReferenceError):
+        code = (
+            ErrorCode.FILE_UNAVAILABLE
+            if str(error) == "file_unavailable"
+            else ErrorCode.FILE_REFERENCE_INVALID
+        )
+        message = "Attachment unavailable"
+        user_message = (
+            "附件文件不存在、已移动或无法访问。请恢复原路径后重试，"
+            "或新建会话并重新附加文件。本次未生成 Todo。"
+            if code == ErrorCode.FILE_UNAVAILABLE
+            else "附件路径或引用不受支持，无法安全访问。请新建会话并重新附加普通本地文件。"
+        )
+        retryable = code == ErrorCode.FILE_UNAVAILABLE
     elif isinstance(error, ModelCapabilityError):
         code = ErrorCode.MODEL_CAPABILITY_INSUFFICIENT
         message = "Required model capability unavailable"
