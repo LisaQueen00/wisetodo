@@ -143,3 +143,121 @@ async def test_close_failure_after_success_is_safe() -> None:
         async with scope.open():
             providers[0].fail_close = True
     assert "private-secret" not in str(caught.value)
+
+
+@pytest.mark.parametrize("key_action", ["clear", "replace"])
+async def test_repair_keeps_snapshot_when_settings_change(key_action: str) -> None:
+    from wisetodo.agent.generation import ResultGenerator
+    from wisetodo.agent.prompts import build_agent_request
+
+    store, settings, _, _ = setup()
+    created = []
+
+    class RepairProvider(Provider):
+        calls = 0
+
+        async def complete(self, request: ModelRequest) -> ModelResponse:
+            self.calls += 1
+            if len(created) == 1 and self.calls == 1:
+                payload = {
+                    "base_url": "https://second.example/v1",
+                    "model": "second",
+                    "key_action": key_action,
+                }
+                if key_action == "replace":
+                    payload["api_key"] = "second-secret"
+                settings.save(SettingsUpdate.model_validate(payload))
+                return ModelResponse(content="invalid JSON", finish_reason="stop")
+            return ModelResponse(
+                content='{"type":"clarification","question":"哪本书？"}', finish_reason="stop"
+            )
+
+    def factory(config: ResolvedSettings) -> RepairProvider:
+        provider = RepairProvider(config)
+        created.append(provider)
+        return provider
+
+    scope = RunProviderScope(settings, factory)
+    request = build_agent_request([ModelMessage(role="user", content="读书")])
+    async with scope.open() as provider:
+        await ResultGenerator(provider).generate(request)
+        assert created[0].calls == 2
+        assert created[0].settings.model == "first"
+        assert created[0].settings.base_url == "https://first.example/v1"
+        assert created[0].settings.api_key.get_secret_value() == "first-secret"
+        assert store.reads == 1
+    async with scope.open() as provider:
+        await ResultGenerator(provider).generate(request)
+        assert created[1].settings.model == "second"
+        assert created[1].settings.base_url == "https://second.example/v1"
+        if key_action == "clear":
+            assert created[1].settings.api_key is None
+        else:
+            assert created[1].settings.api_key.get_secret_value() == "second-secret"
+    assert store.reads == 2
+    assert [provider.closed for provider in created] == [1, 1]
+
+
+async def test_pending_commit_retry_does_not_read_broken_settings(tmp_path) -> None:
+    from uuid import uuid4
+
+    from sqlalchemy import event
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from wisetodo.agent.runtime import AgentRuntime
+    from wisetodo.database import initialize_database
+    from wisetodo.sessions.models import ChatInput
+    from wisetodo.sessions.retry import RetryExecutionError
+    from wisetodo.sessions.service import SessionService
+    from wisetodo.sessions.tables import SessionRecord
+    from wisetodo.todos import TodoService
+
+    store, settings, _, _ = setup()
+    providers = []
+
+    class CreateProvider(Provider):
+        async def complete(self, request: ModelRequest) -> ModelResponse:
+            return ModelResponse(
+                content=(
+                    '{"type":"todo_operation","operation":{"action":"create",'
+                    '"todo":{"topic":"test","items":["one","two"]}}}'
+                ),
+                finish_reason="stop",
+            )
+
+    def factory(config: ResolvedSettings) -> CreateProvider:
+        provider = CreateProvider(config)
+        providers.append(provider)
+        return provider
+
+    database = initialize_database(tmp_path / "pending.db")
+    try:
+        sessions = SessionService(database.sessions)
+        todos = TodoService(database.sessions)
+        sessions.agent_executor = AgentRuntime(sessions, todos, RunProviderScope(settings, factory))
+        session_id = sessions.create().id
+
+        def fail_commit(transaction):
+            if any(
+                isinstance(row, SessionRecord) and row.status == "completed"
+                for row in transaction.identity_map.values()
+            ):
+                raise SQLAlchemyError("simulated write failure")
+
+        event.listen(database.sessions, "before_commit", fail_commit)
+        try:
+            with pytest.raises(RetryExecutionError):
+                await sessions.submit(session_id, ChatInput(message_id=uuid4(), content="test"))
+        finally:
+            event.remove(database.sessions, "before_commit", fail_commit)
+        assert todos.list() == []
+        assert store.reads == 1
+        store.broken = True  # Simulate lost/unavailable credentials after generation.
+        result = await sessions.retry(session_id)
+        assert result.status == "completed"
+        assert len(todos.list()) == 1
+        assert store.reads == 1 and len(providers) == 1
+        assert providers[0].closed == 1
+        assert "first-secret" not in result.model_dump_json()
+    finally:
+        database.dispose()
