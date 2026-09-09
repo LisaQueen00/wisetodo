@@ -14,7 +14,9 @@ from wisetodo.sessions.service import SessionService
 from wisetodo.settings import SettingsService
 from wisetodo.settings.development import DevelopmentSettingsStore
 from wisetodo.settings.storage import create_settings_store
+from wisetodo.skills import SkillSource
 from wisetodo.todos import TodoService
+from wisetodo.tools.local_handlers import registered_handlers
 
 
 def main() -> None:
@@ -27,7 +29,10 @@ def main() -> None:
     parser.add_argument("--dev-model-config", type=Path, help="Explicit development JSON path")
     parser.add_argument("--model-mode", choices=("native", "prompt_compat"), default="native")
     parser.add_argument("--tool-config", type=Path, help="Explicit trusted tool JSON path")
+    parser.add_argument("--skills-dir", type=Path, help="Absolute Skill directory")
     args = parser.parse_args()
+    if args.skills_dir is not None and not args.skills_dir.is_absolute():
+        parser.error("--skills-dir requires an absolute path")
     if args.tool_config is not None and not args.tool_config.is_absolute():
         parser.error("--tool-config requires an absolute path")
     if args.dev_model_config is not None and not args.dev_model_config.is_absolute():
@@ -54,12 +59,10 @@ def main() -> None:
             todo_service,
             create_provider_scope(settings_service),
             mode=args.model_mode,
-            tool_config=args.tool_config
-            or (
-                args.database.parent / "tool-settings.json"
-                if (args.database.parent / "tool-settings.json").exists()
-                else None
-            ),
+            skill_source=SkillSource(args.skills_dir or args.database.parent / "skills"),
+            tool_config=args.tool_config or args.database.parent / "tool-settings.json",
+            optional_tool_config=args.tool_config is None,
+            handlers=registered_handlers(),
         )
         asyncio.run(
             run_stdio_server(

@@ -9,11 +9,18 @@ from wisetodo.agent.runtime import AgentRuntime
 from wisetodo.database import initialize_database
 from wisetodo.model.contracts import ModelResponse, ToolCall
 from wisetodo.sessions.service import SessionService
+from wisetodo.skills import SkillSource
 from wisetodo.todos import TodoService
 
 
 @pytest.mark.parametrize("mode", ["native", "prompt_compat"])
 async def test_runtime_real_stdio_and_fake_model_commit(tmp_path, mode):
+    skill_path = tmp_path / "skills" / "guide" / "SKILL.md"
+    skill_path.parent.mkdir(parents=True)
+    skill_path.write_text(
+        "---\nname: guide\ndescription: guide\naccepts: [text]\n---\noriginal-guidance",
+        encoding="utf-8",
+    )
     path = tmp_path / "tools.json"
     path.write_text(
         json.dumps(
@@ -47,10 +54,16 @@ async def test_runtime_real_stdio_and_fake_model_commit(tmp_path, mode):
 
     class Provider(Scope):
         async def complete(self, request):
+            assert "original-guidance" in request.messages[0].content
+            assert "changed-guidance" not in request.messages[0].content
             self.requests.append(request)
             if len(self.requests) == 1:
                 # Changes after loading cannot affect this Run.
                 path.write_text("invalid next run", encoding="utf-8")
+                skill_path.write_text(
+                    "---\nname: guide\ndescription: guide\naccepts: [text]\n---\nchanged-guidance",
+                    encoding="utf-8",
+                )
                 if mode == "native":
                     return ModelResponse(
                         finish_reason="tool_calls",
@@ -85,7 +98,14 @@ async def test_runtime_real_stdio_and_fake_model_commit(tmp_path, mode):
     try:
         scope = Provider()
         sessions, todos = SessionService(db.sessions), TodoService(db.sessions)
-        sessions.agent_executor = AgentRuntime(sessions, todos, scope, mode=mode, tool_config=path)
+        sessions.agent_executor = AgentRuntime(
+            sessions,
+            todos,
+            scope,
+            mode=mode,
+            tool_config=path,
+            skill_source=SkillSource(tmp_path / "skills"),
+        )
         result = await sessions.submit(sessions.create().id, message())
         assert result.status == "completed"
         assert [event.event_type for event in result.tool_events] == ["started", "completed"]

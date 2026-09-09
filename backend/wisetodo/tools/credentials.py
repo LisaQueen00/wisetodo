@@ -47,3 +47,9 @@ class ToolCredentials:
             return {"Authorization": f"Bearer {value}"}
         except Exception:
             raise ToolCredentialError("credential_unavailable") from None
+
+    def delete(self, reference: UUID) -> None:
+        try:
+            self._store.delete(str(reference))
+        except Exception:
+            raise ToolCredentialError("credential_delete_failed") from None

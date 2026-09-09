@@ -1,5 +1,6 @@
 """Load a complete tool configuration snapshot without activating connections."""
 
+from collections.abc import Iterable
 from pathlib import Path
 
 from pydantic import Field
@@ -15,20 +16,27 @@ class ToolSettings(ConfigModel):
     servers: list[McpServerConfig] = Field(default_factory=list)
 
 
-def load_tools(path: Path) -> tuple[ToolRegistry, dict[str, McpSessionFactory]]:
+def load_tools(
+    path: Path, *, optional: bool = False, handlers: Iterable[str] = ()
+) -> tuple[ToolRegistry, dict[str, McpSessionFactory]]:
     if not path.is_absolute():
         raise ValueError("Tool configuration requires absolute path")
     try:
-        with path.open("rb") as stream:
-            data = stream.read(256 * 1024 + 1)
+        try:
+            with path.open("rb") as stream:
+                data = stream.read(256 * 1024 + 1)
+        except FileNotFoundError:
+            if optional:
+                return ToolRegistry(), {}
+            raise
         if len(data) > 256 * 1024:
             raise ValueError("oversized")
         settings = ToolSettings.model_validate_json(data)
         registry = ToolRegistry(settings.tools)
         servers = server_factories(settings.servers)
         for config in settings.tools:
-            if config.transport.type == "local":
-                raise ValueError("No production local handlers registered yet")
+            if config.transport.type == "local" and config.transport.handler not in handlers:
+                raise ValueError("Unknown local handler")
             if config.transport.type == "mcp" and config.transport.server not in servers:
                 raise ValueError("Unknown MCP server")
         return registry, servers

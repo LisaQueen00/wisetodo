@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -30,11 +31,13 @@ from wisetodo.sessions.models import SessionStatus
 from wisetodo.sessions.tables import MessageRecord, SessionRecord, ToolEventRecord
 from wisetodo.settings.service import SettingsNotConfiguredError
 from wisetodo.settings.storage import SettingsStorageError
+from wisetodo.skills import SkillSource
+from wisetodo.skills.inputs import input_types
 from wisetodo.todos import TodoService
 from wisetodo.tools.registry import ToolRegistry
 from wisetodo.tools.results import execute_results
 from wisetodo.tools.source import load_tools
-from wisetodo.tools.transport import ToolExecutor
+from wisetodo.tools.transport import LocalHandler, ToolExecutor
 
 if TYPE_CHECKING:
     from wisetodo.sessions.service import SessionService
@@ -49,12 +52,18 @@ class AgentRuntime:
         *,
         mode: Literal["native", "prompt_compat"] = "native",
         tool_config: Path | None = None,
+        skill_source: SkillSource | None = None,
+        optional_tool_config: bool = False,
+        handlers: Mapping[str, LocalHandler] | None = None,
     ) -> None:
         self._sessions, self._todos, self._providers = sessions, todos, providers
         if mode not in {"native", "prompt_compat"}:
             raise ValueError("Unknown model interaction mode")
         self._mode = mode
         self._tool_config = tool_config
+        self._skill_source = skill_source
+        self._optional_tool_config = optional_tool_config
+        self._handlers = dict(handlers or {})
 
     @staticmethod
     def _owned(record: SessionRecord, run_id: str) -> None:
@@ -93,7 +102,11 @@ class AgentRuntime:
                 target_id = record.target_todo_id
             if pending is None:
                 registry, servers = (
-                    load_tools(self._tool_config)
+                    load_tools(
+                        self._tool_config,
+                        optional=self._optional_tool_config,
+                        handlers=self._handlers,
+                    )
                     if self._tool_config is not None
                     else (ToolRegistry(), {})
                 )
@@ -104,6 +117,13 @@ class AgentRuntime:
                 snapshot = target.model_dump(mode="json") if target else None
                 history = self._sessions.get(session_id)
                 assert history is not None
+                candidates = (
+                    self._skill_source.begin_run().candidates(
+                        input_types(history.messages), registry.names
+                    )
+                    if self._skill_source is not None
+                    else ()
+                )
                 messages = [
                     ModelMessage(
                         role="assistant" if row.role == "assistant" else "user",
@@ -139,7 +159,10 @@ class AgentRuntime:
                     state = await graph.ainvoke(
                         {
                             "model_request": build_agent_request(
-                                messages, mode=self._mode, tools=registry.definitions()
+                                messages,
+                                mode=self._mode,
+                                tools=registry.definitions(),
+                                skills=candidates,
                             )
                         }
                     )
@@ -150,7 +173,9 @@ class AgentRuntime:
                             follow_redirects=False, trust_env=False
                         ) as client:
                             outputs = await execute_results(
-                                ToolExecutor(registry, http=client, servers=servers),
+                                ToolExecutor(
+                                    registry, http=client, servers=servers, handlers=self._handlers
+                                ),
                                 result.calls,
                                 observer=tool_event,
                             )
@@ -188,6 +213,7 @@ class AgentRuntime:
                                 messages,
                                 mode=self._mode,
                                 phase="final",
+                                skills=candidates,
                                 tools=registry.definitions(),
                             )
                         )

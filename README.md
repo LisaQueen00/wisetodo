@@ -9,3 +9,5 @@ The project is currently in early development.
 Local design and setup notes live under `.local/` and are intentionally excluded from Git.
 
 Prerequisites and commands are documented locally in `.local/SETUP.md`.
+
+Skill and Tool configuration: [setup guide](docs/tool-setup.md).
