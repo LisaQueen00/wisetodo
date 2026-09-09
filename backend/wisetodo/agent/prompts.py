@@ -1,4 +1,4 @@
-"""Deterministic native-mode instructions; no model calls or history loading."""
+"""Deterministic Agent instructions; no model calls or history loading."""
 
 import json
 from collections.abc import Sequence
@@ -6,6 +6,8 @@ from typing import Literal
 
 from wisetodo.agent.results import agent_result_schema
 from wisetodo.model.contracts import ModelMessage, ModelRequest, ToolDefinition
+from wisetodo.skills.injection import render_skill_guidance
+from wisetodo.skills.metadata import ValidatedSkill
 
 CORE_RULES = """你是 WiseTodo 的任务规划助手。
 理解用户目的，必要时选择信息工具，最终提出一个 Todo 操作。
@@ -46,10 +48,11 @@ def build_agent_request(
     tools: Sequence[ToolDefinition] = (),
     phase: Literal["decision", "final"] = "decision",
     mode: Literal["native", "prompt_compat"] = "native",
+    skills: Sequence[ValidatedSkill] = (),
 ) -> ModelRequest:
     """Caller supplies this Session's history and vetted read-only tool definitions.
 
-    OutputSchema provider adaptation and Skill loading are separate tasks.
+    Caller supplies selected Skill snapshots; filesystem loading is separate.
     The application schema below is instruction text, not strict API schema.
     """
     if phase not in {"decision", "final"}:
@@ -78,6 +81,7 @@ def build_agent_request(
         )
     prompt = (
         rules
+        + render_skill_guidance(skills)
         + "\n"
         + stage
         + "\nAgentResult Schema：\n"
