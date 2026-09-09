@@ -16,11 +16,79 @@ async function open() {
 }
 
 describe("model settings panel", () => {
+  it("shows connection testing only inside settings, including after saving", async () => {
+    const service = api();
+    service.test = vi.fn();
+    render(<SettingsPanel api={service} />);
+    await waitFor(() => expect((screen.getByRole("button", { name: "Settings · 模型设置" }) as HTMLButtonElement).disabled).toBe(false));
+    expect(screen.queryByRole("button", { name: /测试.*连接/ })).toBeNull();
+    await open();
+    expect(screen.getByRole("button", { name: "测试连接" })).toBeTruthy();
+    fireEvent.click(screen.getByText("保存设置"));
+    await screen.findByText(/设置已保存/);
+    expect(screen.queryByRole("button", { name: /测试.*连接/ })).toBeNull();
+    await open();
+    expect(screen.getByRole("button", { name: "测试连接" })).toBeTruthy();
+    expect(service.test).not.toHaveBeenCalled();
+  });
+  it("offers testing inside settings without saving and prevents repeated clicks", async () => {
+    const service = api();
+    let finish!: (value: string) => void;
+    service.test = vi.fn(() => new Promise<string>((resolve) => { finish = resolve; }));
+    render(<SettingsPanel api={service} />);
+    await open();
+    expect(service.test).not.toHaveBeenCalled();
+    const button = screen.getByRole("button", { name: "测试连接" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(service.test).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("测试中…")).toBeTruthy();
+    expect(screen.queryByText("保存中…")).toBeNull();
+    await act(async () => finish("ok"));
+    expect(screen.getByRole("form")).toBeTruthy();
+    expect(screen.getByText(/基本连接测试通过/)).toBeTruthy();
+    expect(service.save).not.toHaveBeenCalled();
+  });
+  it.each(["Base URL", "模型名", "API Key 操作"])("requires saving edits to %s before testing", async (field) => {
+    const service = api();
+    service.test = vi.fn().mockResolvedValue("ok");
+    render(<SettingsPanel api={service} />);
+    await open();
+    fireEvent.change(screen.getByLabelText(field), { target: { value: field === "API Key 操作" ? "clear" : "changed" } });
+    const button = screen.getByRole("button", { name: "测试连接" }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(screen.getByText(/请先保存当前设置/)).toBeTruthy();
+    fireEvent.click(button);
+    expect(service.test).not.toHaveBeenCalled();
+  });
+  it("keeps the first-use test disabled and saving does not automatically test", async () => {
+    const service = api(null);
+    service.test = vi.fn();
+    render(<SettingsPanel api={service} />);
+    await open();
+    expect((screen.getByRole("button", { name: "测试连接" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("Base URL"), { target: { value: stored.base_url } });
+    fireEvent.change(screen.getByLabelText("模型名"), { target: { value: stored.model } });
+    fireEvent.click(screen.getByText("保存设置"));
+    await screen.findByText(/设置已保存/);
+    expect(service.test).not.toHaveBeenCalled();
+  });
+  it("shows test failure inside the open form without automatic retry", async () => {
+    const service = api();
+    service.test = vi.fn().mockResolvedValue("authentication");
+    render(<SettingsPanel api={service} />);
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: "测试连接" }));
+    await screen.findByText(/鉴权失败/);
+    expect(service.test).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("form")).toBeTruthy();
+  });
   it("tests only on explicit click and warns about cost", async () => {
     const service = api();
     service.test = vi.fn().mockResolvedValue("ok");
     render(<SettingsPanel api={service} />);
-    const button = await screen.findByText("测试已保存连接");
+    await open();
+    const button = screen.getByRole("button", { name: "测试连接" });
     expect(service.test).not.toHaveBeenCalled();
     expect(screen.getByText(/可能产生少量费用/)).toBeTruthy();
     fireEvent.click(button);

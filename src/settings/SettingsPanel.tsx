@@ -14,11 +14,13 @@ export function SettingsPanel({ api }: { api: SettingsApi }) {
   const [key, setKey] = useState("");
   const [action, setAction] = useState<"keep" | "replace" | "clear">("keep");
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const saving = useRef(false);
   const generation = useRef(0);
   const trigger = useRef<HTMLButtonElement>(null);
+  const unsaved = !saved || baseUrl.trim() !== saved.base_url || model.trim() !== saved.model || action !== "keep";
 
   useEffect(() => {
     const requests = generation;
@@ -39,8 +41,8 @@ export function SettingsPanel({ api }: { api: SettingsApi }) {
   }
 
   async function testConnection() {
-    if (saving.current || !saved || !api.test) return;
-    saving.current = true; setBusy(true); setNotice(""); setError("");
+    if (saving.current || !saved || !api.test || (open && unsaved)) return;
+    saving.current = true; setBusy(true); setTesting(true); setNotice(""); setError("");
     const ticket = generation.current;
     try {
       const status = await api.test();
@@ -50,7 +52,7 @@ export function SettingsPanel({ api }: { api: SettingsApi }) {
       }
     } catch {
       if (ticket === generation.current) setError("连接测试未完成，请检查服务后重试。未修改已保存配置。");
-    } finally { saving.current = false; if (ticket === generation.current) setBusy(false); }
+    } finally { saving.current = false; if (ticket === generation.current) { setBusy(false); setTesting(false); } }
   }
 
   async function save() {
@@ -103,10 +105,6 @@ export function SettingsPanel({ api }: { api: SettingsApi }) {
     {ready && !open && <button type="button" disabled={busy} className="mt-2 text-white/50 underline" onClick={() => {
       setReady(false); setNotice(""); setError(""); setAttempt((value) => value + 1);
     }}>重新读取设置</button>}
-    {ready && saved && !open && api.test && <div className="mt-2">
-      <p className="text-white/50">测试使用已保存配置，仅发送“Reply OK.”，不发送聊天或附件；可能产生少量费用。</p>
-      <button type="button" disabled={busy} className="mt-2 rounded border border-white/15 px-3 py-2 disabled:opacity-40" onClick={() => { void testConnection(); }}>{busy ? "测试中…" : "测试已保存连接"}</button>
-    </div>}
     {error && <p role="alert" className="mt-2 text-rose-300">{error}</p>}
     {!ready && error && <button type="button" className="mt-2 underline" onClick={() => {
       setError(""); setAttempt((value) => value + 1);
@@ -116,17 +114,23 @@ export function SettingsPanel({ api }: { api: SettingsApi }) {
       onSubmit={(event) => { event.preventDefault(); void save(); }}
       onKeyDown={(event) => { if (event.key === "Escape" && !event.nativeEvent.isComposing) { event.preventDefault(); close(); } }}>
       <fieldset disabled={busy} className="space-y-3">
-        <label className="block">Base URL<input autoFocus className={inputClass} value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="http://localhost:8000/v1" autoComplete="off" spellCheck={false} /></label>
-        <label className="block">模型名<input className={inputClass} value={model} onChange={(event) => setModel(event.target.value)} autoComplete="off" spellCheck={false} /></label>
-        <label className="block">API Key 操作<select className={inputClass} value={action} onChange={(event) => { setAction(event.target.value as typeof action); setKey(""); }}>
+        <label className="block">Base URL<input autoFocus className={inputClass} value={baseUrl} onChange={(event) => { setBaseUrl(event.target.value); setNotice(""); setError(""); }} placeholder="http://localhost:8000/v1" autoComplete="off" spellCheck={false} /></label>
+        <label className="block">模型名<input className={inputClass} value={model} onChange={(event) => { setModel(event.target.value); setNotice(""); setError(""); }} autoComplete="off" spellCheck={false} /></label>
+        <label className="block">API Key 操作<select className={inputClass} value={action} onChange={(event) => { setAction(event.target.value as typeof action); setKey(""); setNotice(""); setError(""); }}>
           <option value="keep">{saved?.has_api_key ? "保留已保存的密钥" : "不使用密钥（本地服务）"}</option>
           <option value="replace">填写／替换密钥</option>
           <option value="clear">清除密钥，不使用鉴权</option>
         </select></label>
         {action === "replace" && <label className="block">新 API Key<input type="password" className={inputClass} value={key} onChange={(event) => setKey(event.target.value)} autoComplete="new-password" spellCheck={false} /></label>}
         <p className="text-white/50">全局连接设置，与会话无关。密钥保存到系统凭据库，不会显示原值。保存不发起模型请求。</p>
+        {api.test && <div className="rounded-lg border border-white/10 p-2">
+          <p className="text-white/50">仅测试已保存配置，发送一次“Reply OK.”，不发送聊天或附件，不自动重试；可能产生少量费用。</p>
+          {unsaved && <p className="mt-1 text-amber-200">请先保存当前设置，再测试连接。</p>}
+          <button type="button" disabled={busy || unsaved} className="mt-2 rounded-lg border border-white/15 px-3 py-2 disabled:opacity-40"
+            onClick={() => { void testConnection(); }}>{testing ? "测试中…" : "测试连接"}</button>
+        </div>}
         <div className="flex gap-3">
-          <button type="submit" className="rounded-lg bg-purple-400/20 px-3 py-2">{busy ? "保存中…" : "保存设置"}</button>
+          <button type="submit" className="rounded-lg bg-purple-400/20 px-3 py-2">{busy && !testing ? "保存中…" : "保存设置"}</button>
           <button type="button" className="rounded-lg border border-white/15 px-3 py-2" onClick={close}>取消</button>
         </div>
       </fieldset>
