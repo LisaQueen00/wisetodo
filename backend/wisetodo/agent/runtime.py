@@ -23,6 +23,7 @@ from wisetodo.agent.results import (
     ToolCallsResult,
     UpdateOperation,
 )
+from wisetodo.agent.url_context import url_context
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.files.references import FileReferences
 from wisetodo.ipc.events import emit_run
@@ -148,6 +149,9 @@ class AgentRuntime:
                     for row in history.messages
                     if row.role in {"user", "assistant"}
                 ]
+                urls = url_context(history.messages)
+                if urls is not None:
+                    messages.append(urls)
                 messages.append(
                     ModelMessage(
                         role="user",
