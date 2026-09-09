@@ -26,8 +26,8 @@ def test_example_type_selection_and_whole_body_injection() -> None:
         "pdf": {"reading-book"},
         "book_url": {"reading-book"},
         "github_url": {"learn-github-project", "join-open-source"},
-        "text": {"join-open-source"},
-        "url": set(),
+        "text": {"join-open-source", "reading-book"},
+        "url": {"reading-book"},
     }
     for kind, names in expected.items():
         candidates = snapshot.candidates([kind])

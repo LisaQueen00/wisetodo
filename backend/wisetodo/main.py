@@ -20,6 +20,11 @@ from wisetodo.tools.local_handlers import registered_handlers
 
 
 def main() -> None:
+    if sys.argv[1:] == ["--pdf-worker"]:
+        from wisetodo.files.pdf_worker import main as pdf_main
+
+        pdf_main()
+        return
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if isinstance(stream, TextIOWrapper):
             stream.reconfigure(encoding="utf-8")

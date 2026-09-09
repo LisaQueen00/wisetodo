@@ -1,0 +1,15 @@
+{
+  "tools": [
+    {
+      "name": "parse_pdf",
+      "description": "读取用户附加 PDF 的真实书签目录、标题和有限开头文本；只接受本次附件的 file_ref，不接受路径。",
+      "input_schema": {
+        "type": "object",
+        "properties": {"file_ref": {"type": "string"}},
+        "required": ["file_ref"],
+        "additionalProperties": false
+      },
+      "transport": {"type": "local", "handler": "parse_pdf"}
+    }
+  ]
+}

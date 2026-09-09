@@ -59,3 +59,11 @@ class FileReferences:
         if path is None:
             raise FileReferenceError("unknown_file_reference")
         return _checked(path)
+
+    def describe(self, attachment: str) -> dict[str, str]:
+        """Replace a trusted history attachment with its current Run capability."""
+        path = _checked(validate_attachment_path(attachment))
+        for key, known in self._paths.items():
+            if path == known:
+                return {"file_ref": key, "name": known.name}
+        raise FileReferenceError("unknown_file_reference")

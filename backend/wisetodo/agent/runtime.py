@@ -36,6 +36,7 @@ from wisetodo.settings.storage import SettingsStorageError
 from wisetodo.skills import SkillSource
 from wisetodo.skills.inputs import input_types
 from wisetodo.todos import TodoService
+from wisetodo.tools.local_handlers import registered_handlers
 from wisetodo.tools.model_content import model_tool_results
 from wisetodo.tools.registry import ToolRegistry
 from wisetodo.tools.results import execute_results
@@ -104,11 +105,22 @@ class AgentRuntime:
                 pending = record.pending_operation
                 target_id = record.target_todo_id
             if pending is None:
+                history = self._sessions.get(session_id)
+                assert history is not None
+                # Run-local capabilities, never arbitrary model-supplied paths.
+                references = FileReferences(
+                    attachment
+                    for row in history.messages
+                    if row.role == "user"
+                    for attachment in row.attachments
+                    if not attachment.lower().startswith(("http://", "https://"))
+                )
+                handlers = {**self._handlers, **registered_handlers(references)}
                 registry, servers = (
                     load_tools(
                         self._tool_config,
                         optional=self._optional_tool_config,
-                        handlers=self._handlers,
+                        handlers=handlers,
                     )
                     if self._tool_config is not None
                     else (ToolRegistry(), {})
@@ -118,16 +130,6 @@ class AgentRuntime:
                 if target_id and target is None:
                     raise LookupError("Todo not found")
                 snapshot = target.model_dump(mode="json") if target else None
-                history = self._sessions.get(session_id)
-                assert history is not None
-                # Do not check attachments on pending-operation-only commit retries.
-                FileReferences(
-                    attachment
-                    for row in history.messages
-                    if row.role == "user"
-                    for attachment in row.attachments
-                    if not attachment.lower().startswith(("http://", "https://"))
-                )
                 candidates = (
                     self._skill_source.begin_run().candidates(
                         input_types(history.messages), registry.names
@@ -141,7 +143,15 @@ class AgentRuntime:
                         content=row.content
                         + (
                             "\n资料引用（未读取）："
-                            + json.dumps(row.attachments, ensure_ascii=False)
+                            + json.dumps(
+                                [
+                                    item
+                                    if item.lower().startswith(("http://", "https://"))
+                                    else references.describe(item)
+                                    for item in row.attachments
+                                ],
+                                ensure_ascii=False,
+                            )
                             if row.attachments
                             else ""
                         ),
@@ -188,7 +198,7 @@ class AgentRuntime:
                         ) as client:
                             outputs = await execute_results(
                                 ToolExecutor(
-                                    registry, http=client, servers=servers, handlers=self._handlers
+                                    registry, http=client, servers=servers, handlers=handlers
                                 ),
                                 result.calls,
                                 observer=tool_event,
