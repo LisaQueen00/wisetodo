@@ -10,6 +10,7 @@ from wisetodo.agent.generation import InvalidAgentOutputError, UnusableModelResp
 from wisetodo.agent.tool_calls import InvalidToolCallsError
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.model.provider import ModelCapabilityError, ModelRequestError
+from wisetodo.tools.transport import ToolTransportError
 
 KNOWN_MODEL_ERRORS = (
     ModelCapabilityError,
@@ -55,6 +56,11 @@ def map_agent_error(
             else "模型请求失败，请检查连接设置、服务状态后重试。"
         )
         retryable = isinstance(error, ModelRequestError)
+    elif isinstance(error, ToolTransportError):
+        code = ErrorCode.TOOL_EXECUTION_FAILED
+        message = "Tool execution failed"
+        user_message = "工具调用失败，本次结果未提交；请检查工具配置或服务后重试。"
+        retryable = True
     elif isinstance(error, InvalidToolCallsError):
         code = ErrorCode.TOOL_ARGUMENT_INVALID
         message = "Invalid native tool calls"
