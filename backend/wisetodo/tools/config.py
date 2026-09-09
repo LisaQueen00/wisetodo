@@ -2,6 +2,7 @@
 
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
+from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -32,6 +33,7 @@ class HttpTransport(ConfigModel):
     type: Literal["http"]
     url: StrictStr
     method: Literal["GET", "POST"] = "POST"
+    credential_ref: UUID | None = None
 
     @field_validator("url")
     @classmethod

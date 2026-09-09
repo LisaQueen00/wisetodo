@@ -11,6 +11,7 @@ from mcp import ClientSession
 from pydantic import JsonValue, TypeAdapter
 
 from wisetodo.tools.config import HttpTransport, LocalTransport
+from wisetodo.tools.credentials import ToolCredentials
 from wisetodo.tools.registry import ToolRegistry
 from wisetodo.tools.validation import ToolArgumentsError, validate_arguments
 
@@ -33,6 +34,7 @@ class ToolExecutor:
         handlers: Mapping[str, LocalHandler] | None = None,
         servers: Mapping[str, McpSessionFactory] | None = None,
         timeout: float = 30,
+        credentials: ToolCredentials | None = None,
     ) -> None:
         if not 0 < timeout < float("inf"):
             raise ValueError("Expected a finite positive timeout")
@@ -41,6 +43,7 @@ class ToolExecutor:
         self._handlers = dict(handlers or {})
         self._servers = dict(servers or {})
         self._timeout = timeout
+        self._credentials = credentials if credentials is not None else ToolCredentials()
 
     async def execute(self, name: str, arguments: dict[str, JsonValue]) -> JsonValue:
         config = self._registry.get(name)
@@ -98,6 +101,7 @@ class ToolExecutor:
             transport.url,
             params=params,
             json=args if transport.method == "POST" else None,
+            headers=self._credentials.bearer_headers(transport.credential_ref),
             follow_redirects=False,
             timeout=self._timeout,
         ) as response:

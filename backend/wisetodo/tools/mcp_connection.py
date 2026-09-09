@@ -4,6 +4,7 @@ import os
 from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 from typing import Annotated, Literal
+from uuid import UUID
 
 import httpx2
 from mcp import ClientSession
@@ -12,6 +13,7 @@ from mcp.client.streamable_http import streamable_http_client
 from pydantic import Field, StrictStr, field_validator
 
 from wisetodo.tools.config import ConfigModel, HttpTransport, Name
+from wisetodo.tools.credentials import ToolCredentials
 from wisetodo.tools.transport import McpSessionFactory
 
 
@@ -24,6 +26,7 @@ class StdioConnection(ConfigModel):
 class HttpConnection(ConfigModel):
     type: Literal["streamable_http"]
     url: StrictStr
+    credential_ref: UUID | None = None
 
     @field_validator("url")
     @classmethod
@@ -36,7 +39,9 @@ class McpServerConfig(ConfigModel):
     connection: Annotated[StdioConnection | HttpConnection, Field(discriminator="type")]
 
 
-def session_factory(config: McpServerConfig) -> McpSessionFactory:
+def session_factory(
+    config: McpServerConfig, credentials: ToolCredentials | None = None
+) -> McpSessionFactory:
     snapshot = McpServerConfig.model_validate(config.model_dump())
 
     @asynccontextmanager
@@ -53,8 +58,13 @@ def session_factory(config: McpServerConfig) -> McpSessionFactory:
                         await session.initialize()
                         yield session
         else:
+            vault = credentials if credentials is not None else ToolCredentials()
             async with (
-                httpx2.AsyncClient(follow_redirects=False, trust_env=False) as client,
+                httpx2.AsyncClient(
+                    follow_redirects=False,
+                    trust_env=False,
+                    headers=vault.bearer_headers(connection.credential_ref),
+                ) as client,
                 streamable_http_client(connection.url, http_client=client) as streams,
                 ClientSession(*streams) as session,
             ):
