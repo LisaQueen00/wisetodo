@@ -79,7 +79,7 @@ class OpenAIProvider:
             "messages": messages,
             "stream": True,
         }
-        if request.tools:
+        if request.tools and request.mode == "native":
             payload["tools"] = [
                 {
                     "type": "function",

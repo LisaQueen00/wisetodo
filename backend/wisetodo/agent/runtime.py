@@ -33,9 +33,17 @@ if TYPE_CHECKING:
 
 class AgentRuntime:
     def __init__(
-        self, sessions: "SessionService", todos: TodoService, providers: RunProviderScope
+        self,
+        sessions: "SessionService",
+        todos: TodoService,
+        providers: RunProviderScope,
+        *,
+        mode: Literal["native", "prompt_compat"] = "native",
     ) -> None:
         self._sessions, self._todos, self._providers = sessions, todos, providers
+        if mode not in {"native", "prompt_compat"}:
+            raise ValueError("Unknown model interaction mode")
+        self._mode = mode
 
     @staticmethod
     def _owned(record: SessionRecord, run_id: str) -> None:
@@ -88,7 +96,9 @@ class AgentRuntime:
                 stage = "model"
                 async with self._providers.open() as provider:
                     graph = build_agent_graph(ResultGenerator(provider))
-                    state = await graph.ainvoke({"model_request": build_agent_request(messages)})
+                    state = await graph.ainvoke(
+                        {"model_request": build_agent_request(messages, mode=self._mode)}
+                    )
                     generated = state["generation"]
                     result = generated.result
                     if isinstance(result, TodoOperationResult):

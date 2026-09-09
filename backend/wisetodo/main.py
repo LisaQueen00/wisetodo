@@ -25,6 +25,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="WiseTodo JSON Lines sidecar")
     parser.add_argument("--database", type=Path, required=True, help="Absolute SQLite file path")
     parser.add_argument("--dev-model-config", type=Path, help="Explicit development JSON path")
+    parser.add_argument("--model-mode", choices=("native", "prompt_compat"), default="native")
     args = parser.parse_args()
     if args.dev_model_config is not None and not args.dev_model_config.is_absolute():
         parser.error("--dev-model-config requires an absolute path")
@@ -46,7 +47,10 @@ def main() -> None:
             )
         )
         session_service.agent_executor = AgentRuntime(
-            session_service, todo_service, create_provider_scope(settings_service)
+            session_service,
+            todo_service,
+            create_provider_scope(settings_service),
+            mode=args.model_mode,
         )
         asyncio.run(
             run_stdio_server(

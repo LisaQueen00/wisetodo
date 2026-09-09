@@ -46,12 +46,18 @@ class OutputSchema(Contract):
 
 
 class ModelRequest(Contract):
+    mode: Literal["native", "prompt_compat"] = "native"
     messages: Annotated[tuple[ModelMessage, ...], Field(min_length=1)]
     tools: tuple[ToolDefinition, ...] = ()
     output_schema: OutputSchema | None = None
 
     @model_validator(mode="after")
     def validate_tools(self) -> "ModelRequest":
+        if self.mode == "prompt_compat" and (
+            self.output_schema is not None
+            or any(message.tool_calls or message.role == "tool" for message in self.messages)
+        ):
+            raise ValueError("Compatibility requests use text messages and prompt schemas only")
         if len({tool.name for tool in self.tools}) != len(self.tools):
             raise ValueError("Duplicate tool definitions")
         pending: set[str] = set()

@@ -45,11 +45,12 @@ def build_agent_request(
     *,
     tools: Sequence[ToolDefinition] = (),
     phase: Literal["decision", "final"] = "decision",
+    mode: Literal["native", "prompt_compat"] = "native",
 ) -> ModelRequest:
     """Caller supplies this Session's history and vetted read-only tool definitions.
 
-    OutputSchema provider adaptation, Skill loading and prompt_compat are separate
-    tasks. The application schema below is instruction text, not strict API schema.
+    OutputSchema provider adaptation and Skill loading are separate tasks.
+    The application schema below is instruction text, not strict API schema.
     """
     if phase not in {"decision", "final"}:
         raise ValueError("Unknown prompt phase")
@@ -63,8 +64,20 @@ def build_agent_request(
         if available
         else "当前禁止调用工具：只返回 todo_operation 或 clarification；资料不足就澄清。"
     )
+    rules = CORE_RULES
+    if mode == "prompt_compat":
+        rules = rules.replace(
+            "- 原生工具调用使用接口的 tool_calls，不在 content 中模拟 tool_calls JSON，"
+            "不同时输出 Todo 操作。",
+            "- 本次为 prompt_compat：只在 content 输出一个完整 AgentResult JSON。需要工具时输出"
+            ' type="tool_calls"，calls 含唯一 callId、tool 和对象 arguments，'
+            "不同时输出 Todo 操作。",
+        )
+        rules += "\n本次可用只读工具定义（不可虚构未列出的工具）：\n" + json.dumps(
+            [tool.model_dump(mode="json") for tool in available], ensure_ascii=False
+        )
     prompt = (
-        CORE_RULES
+        rules
         + "\n"
         + stage
         + "\nAgentResult Schema：\n"
@@ -73,6 +86,7 @@ def build_agent_request(
         )
     )
     return ModelRequest(
+        mode=mode,
         messages=(
             ModelMessage(role="system", content=prompt),
             *(message.model_copy(deep=True) for message in messages),
