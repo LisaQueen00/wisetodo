@@ -1,4 +1,5 @@
 import asyncio
+import socket
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -8,6 +9,48 @@ import pytest
 from pydantic import ValidationError
 
 from wisetodo.tools.mcp_connection import McpServerConfig, server_factories, session_factory
+
+
+async def test_real_streamable_http_initialization_and_call():
+    import uvicorn
+    from mcp.server.mcpserver import MCPServer
+
+    server = MCPServer("wisetodo-http-test")
+
+    @server.tool()
+    def echo(value: str) -> str:
+        return value
+
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+        listener.listen()
+        app = server.streamable_http_app()
+        host = uvicorn.Server(uvicorn.Config(app, log_level="error", lifespan="on"))
+        task = asyncio.create_task(host.serve(sockets=[listener]))
+        try:
+            async with asyncio.timeout(15):
+                while not host.started:
+                    if task.done():
+                        await task
+                        raise AssertionError("HTTP server stopped before startup")
+                    await asyncio.sleep(0.01)
+                settings = McpServerConfig.model_validate(
+                    {
+                        "name": "http-test",
+                        "connection": {
+                            "type": "streamable_http",
+                            "url": f"http://127.0.0.1:{port}/mcp",
+                        },
+                    }
+                )
+                async with session_factory(settings)() as session:
+                    result = await session.call_tool("echo", arguments={"value": "http-local"})
+                    assert not result.is_error
+                    assert "http-local" in result.model_dump_json()
+        finally:
+            host.should_exit = True
+            await asyncio.wait_for(task, timeout=5)
 
 
 def config():
