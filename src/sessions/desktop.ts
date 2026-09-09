@@ -33,7 +33,7 @@ export const desktopSessionApi: SessionApi = {
   executesMessages: true,
   async listenRuns(handler) {
     return listen<unknown>("wisetodo:run", ({ payload }) => {
-      if (object(payload) && (payload.event === "run.started" || payload.event === "run.finished")
+      if (object(payload) && (payload.event === "run.started" || payload.event === "run.finished" || payload.event === "run.updated")
         && typeof payload.session_id === "string" && typeof payload.run_id === "string") {
         handler({ event: payload.event, session_id: payload.session_id, run_id: payload.run_id });
       }

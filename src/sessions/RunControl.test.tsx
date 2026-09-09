@@ -16,6 +16,7 @@ it("uses the live run ID, ignores an old finish and prevents duplicate cancel", 
   const view = render(<RunControl api={api} executing />);
   await act(async () => {});
   act(() => handler({ event: "run.started", session_id: "s", run_id: "new" }));
+  act(() => handler({ event: "run.updated", session_id: "s", run_id: "new" }));
   act(() => handler({ event: "run.finished", session_id: "s", run_id: "old" }));
   const button = screen.getByText("停止执行");
   fireEvent.click(button);

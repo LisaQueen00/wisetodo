@@ -11,6 +11,31 @@ def calls():
     return [AgentToolCall(callId=str(i), tool="read", arguments={"index": i}) for i in range(2)]
 
 
+@pytest.mark.parametrize("outcome", ["completed", "failed", "cancelled"])
+async def test_observer_records_terminal_state(outcome):
+    events = []
+
+    class Runner:
+        async def execute(self, name, arguments):
+            if outcome == "failed":
+                raise ValueError("private error")
+            if outcome == "cancelled":
+                raise asyncio.CancelledError
+            return "private result"
+
+    async def run():
+        return await execute_batch(
+            Runner(), calls()[:1], observer=lambda call, state: events.append((call.callId, state))
+        )
+
+    if outcome == "completed":
+        await run()
+    else:
+        with pytest.raises(ValueError if outcome == "failed" else asyncio.CancelledError):
+            await run()
+    assert events == [("0", "started"), ("0", outcome)]
+
+
 async def test_calls_start_concurrently_and_results_keep_input_order():
     started = []
     both_started = asyncio.Event()

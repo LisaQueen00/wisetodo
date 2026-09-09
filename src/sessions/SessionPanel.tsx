@@ -33,6 +33,23 @@ export function SessionPanel({ api, loadTodos, onCommitted }: { api: SessionApi;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeId = active?.id;
   useEffect(() => {
+    let live = true;
+    let sequence = 0;
+    let stop: (() => void) | undefined;
+    api.listenRuns?.((event) => {
+      if (!live || event.session_id !== activeId) return;
+      const revision = ++sequence;
+      if (event.event !== "run.updated") return;
+      const ticket = request.current;
+      void api.get(event.session_id).then((history) => {
+        if (live && revision === sequence && ticket === request.current && mutation.current) {
+          setActive((previous) => previous?.id === history.id ? history : previous);
+        }
+      }, () => { /* Final request refresh remains authoritative if an update fails. */ });
+    }).then((unlisten) => { if (live) stop = unlisten; else unlisten(); }, () => {});
+    return () => { live = false; stop?.(); };
+  }, [api, activeId]);
+  useEffect(() => {
     if (!loadTodos || !api.executesMessages) return;
     let live = true;
     loadTodos().then((todos) => { if (live) setTargets(todos); }, () => {

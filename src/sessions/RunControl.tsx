@@ -12,7 +12,7 @@ export function RunControl({ api, executing, onReady }: { api: SessionApi; execu
     api.listenRuns?.((event) => {
       if (!active) return;
       if (event.event === "run.started") { setRun(event); setError(""); setPending(false); cancelling.current = false; }
-      else setRun((old) => old?.run_id === event.run_id ? null : old);
+      else if (event.event === "run.finished") setRun((old) => old?.run_id === event.run_id ? null : old);
     }).then((unlisten) => { if (active) { stop = unlisten; onReady?.(true); } else unlisten(); }, () => {
       if (active) setError("执行事件监听失败，请重启应用后再执行。");
     });

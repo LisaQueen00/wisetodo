@@ -11,12 +11,14 @@ request_id: ContextVar[str | None] = ContextVar("ipc_request_id", default=None)
 class RunEvent(BaseModel):
     type: Literal["event"] = "event"
     requestId: str
-    event: Literal["run.started", "run.finished"]
+    event: Literal["run.started", "run.finished", "run.updated"]
     session_id: str
     run_id: str
 
 
-def emit_run(event: Literal["run.started", "run.finished"], session_id: str, run_id: str) -> None:
+def emit_run(
+    event: Literal["run.started", "run.finished", "run.updated"], session_id: str, run_id: str
+) -> None:
     correlation = request_id.get()
     if correlation is not None:
         print(

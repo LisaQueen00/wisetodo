@@ -25,4 +25,4 @@ export interface SessionApi {
   delete: (id: string) => Promise<boolean>;
 }
 
-export interface RunEvent { event: "run.started" | "run.finished"; session_id: string; run_id: string }
+export interface RunEvent { event: "run.started" | "run.finished" | "run.updated"; session_id: string; run_id: string }

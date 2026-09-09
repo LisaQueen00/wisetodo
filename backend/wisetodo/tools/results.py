@@ -6,11 +6,11 @@ from collections.abc import Sequence
 from pydantic import JsonValue
 
 from wisetodo.agent.results import AgentToolCall, ToolCallsResult
-from wisetodo.tools.batch import ToolRunner, execute_batch
+from wisetodo.tools.batch import ToolObserver, ToolRunner, execute_batch
 
 
 async def execute_results(
-    executor: ToolRunner, calls: Sequence[AgentToolCall]
+    executor: ToolRunner, calls: Sequence[AgentToolCall], *, observer: ToolObserver | None = None
 ) -> dict[str, JsonValue]:
     """Return values keyed by callId, in original call order, only on full success.
 
@@ -21,7 +21,7 @@ async def execute_results(
     snapshot = ToolCallsResult.model_validate(
         {"type": "tool_calls", "calls": [call.model_dump() for call in calls]}
     )
-    results = await execute_batch(executor, snapshot.calls)
+    results = await execute_batch(executor, snapshot.calls, observer=observer)
     return {
         call.callId: copy.deepcopy(result)
         for call, result in zip(snapshot.calls, results, strict=True)

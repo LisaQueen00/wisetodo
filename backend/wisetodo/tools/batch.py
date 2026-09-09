@@ -1,8 +1,8 @@
 """Concurrent execution for a caller-vetted batch of independent read-only calls."""
 
 import asyncio
-from collections.abc import Sequence
-from typing import Protocol
+from collections.abc import Callable, Sequence
+from typing import Literal, Protocol
 
 from pydantic import JsonValue
 
@@ -13,8 +13,13 @@ class ToolRunner(Protocol):
     async def execute(self, name: str, arguments: dict[str, JsonValue]) -> JsonValue: ...
 
 
+ToolObserver = Callable[
+    [AgentToolCall, Literal["started", "completed", "failed", "cancelled"]], None
+]
+
+
 async def execute_batch(
-    executor: ToolRunner, calls: Sequence[AgentToolCall]
+    executor: ToolRunner, calls: Sequence[AgentToolCall], *, observer: ToolObserver | None = None
 ) -> tuple[JsonValue, ...]:
     """Detach and revalidate the batch before scheduling; preserve input order.
 
@@ -26,9 +31,25 @@ async def execute_batch(
     snapshot = ToolCallsResult.model_validate(
         {"type": "tool_calls", "calls": [call.model_dump() for call in calls]}
     )
-    tasks = [
-        asyncio.create_task(executor.execute(call.tool, call.arguments)) for call in snapshot.calls
-    ]
+
+    async def run(call: AgentToolCall) -> JsonValue:
+        if observer:
+            observer(call, "started")
+        try:
+            result = await executor.execute(call.tool, call.arguments)
+        except asyncio.CancelledError:
+            if observer:
+                observer(call, "cancelled")
+            raise
+        except Exception:
+            if observer:
+                observer(call, "failed")
+            raise
+        if observer:
+            observer(call, "completed")
+        return result
+
+    tasks = [asyncio.create_task(run(call)) for call in snapshot.calls]
     try:
         return tuple(await asyncio.gather(*tasks))
     finally:
