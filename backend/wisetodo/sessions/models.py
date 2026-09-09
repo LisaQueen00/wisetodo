@@ -15,6 +15,8 @@ from pydantic import (
     model_validator,
 )
 
+from wisetodo.files.references import validate_attachment_path
+
 
 class SessionStatus(StrEnum):
     READY = "ready"
@@ -90,6 +92,7 @@ class ChatInput(BaseModel):
     def validate_files(cls, values: list[str]) -> list[str]:
         result: list[str] = []
         for value in values:
+            validate_attachment_path(value)
             path = Path(value)
             if (
                 not path.is_absolute()
