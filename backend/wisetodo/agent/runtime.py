@@ -13,6 +13,7 @@ from sqlalchemy.orm import object_session
 from wisetodo import diagnostics
 from wisetodo.agent.errors import AgentExecutionError, map_agent_error
 from wisetodo.agent.generation import InvalidAgentOutputError, ResultGenerator
+from wisetodo.agent.history import bounded_history
 from wisetodo.agent.prompts import build_agent_request
 from wisetodo.agent.results import (
     AGENT_RESULT_ADAPTER,
@@ -160,6 +161,7 @@ class AgentRuntime:
                     for row in history.messages
                     if row.role in {"user", "assistant"}
                 ]
+                messages = bounded_history(messages)
                 urls = url_context(history.messages)
                 if urls is not None:
                     messages.append(urls)
