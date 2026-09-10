@@ -1,0 +1,80 @@
+name: Desktop builds
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            bundle: nsis
+          - os: ubuntu-22.04
+            bundle: deb
+          - os: macos-14
+            bundle: dmg
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Linux prerequisites
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev librsvg2-dev libayatana-appindicator3-dev patchelf
+      - name: Project Python environment
+        run: |
+          python -m venv .venv
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            echo "$GITHUB_WORKSPACE/.venv/Scripts" >> "$GITHUB_PATH"
+          else
+            echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+          fi
+      - name: Dependencies
+        run: |
+          python -m pip install -e './backend[dev]'
+          pnpm install --frozen-lockfile
+      - name: Offline tests
+        run: |
+          python -m pytest backend/tests -q
+          python -m ruff check backend scripts
+          python -m mypy backend/wisetodo
+          pnpm lint
+          pnpm test
+          cargo test --locked --manifest-path src-tauri/Cargo.toml
+      - name: Freeze and smoke-test Sidecar
+        run: python scripts/build_sidecar.py
+      - name: Bundle desktop
+        run: pnpm exec tauri build --config src-tauri/tauri.bundle.conf.json --bundles ${{ matrix.bundle }} -- --locked
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wisetodo-${{ matrix.os }}
+          path: src-tauri/target/release/bundle/
+          if-no-files-found: error
+          retention-days: 14

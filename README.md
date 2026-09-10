@@ -11,3 +11,5 @@ Local design and setup notes live under `.local/` and are intentionally excluded
 Prerequisites and commands are documented locally in `.local/SETUP.md`.
 
 Skill and Tool configuration: [setup guide](docs/tool-setup.md).
+
+Native Windows, macOS and Linux builds: [build guide](docs/building.md).
