@@ -3,6 +3,40 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DebouncedSave } from "./debouncedSave";
 
 describe("DebouncedSave", () => {
+  it("coalesces a thousand edits into one latest-value write", async () => {
+    const save = vi.fn(async (_value: number) => { void _value; });
+    const autosave = new DebouncedSave(save);
+    for (let value = 0; value < 1000; value++) {
+      autosave.schedule(value);
+      await vi.advanceTimersByTimeAsync(1);
+    }
+    expect(save).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(400);
+    expect(save).toHaveBeenCalledExactlyOnceWith(999);
+    await autosave.flush();
+    expect(save).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a burst behind a slow write serial and saves the final value", async () => {
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    const saved: number[] = [];
+    const save = vi.fn(async (value: number) => {
+      if (value === -1) await blocked;
+      saved.push(value);
+    });
+    const autosave = new DebouncedSave(save);
+    autosave.schedule(-1);
+    await vi.advanceTimersByTimeAsync(400);
+    for (let value = 0; value < 1000; value++) autosave.schedule(value);
+    await vi.advanceTimersByTimeAsync(400);
+    expect(save).toHaveBeenCalledOnce();
+    release();
+    await autosave.flush();
+    expect(saved).toEqual([-1, 999]);
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
   beforeEach(() => {
     vi.useFakeTimers();
   });
