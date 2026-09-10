@@ -79,3 +79,11 @@ progress::-moz-progress-bar { background: var(--todo-accent, var(--priority-norm
   outline: 2px solid var(--priority-normal);
   outline-offset: 3px;
 }
+@keyframes todo-reveal {
+  0%, 100% { box-shadow: 0 0 0 2px rgb(180 145 250 / 0.2); }
+  50% { box-shadow: 0 0 0 3px rgb(180 145 250 / 0.85); }
+}
+.todo-card[data-reveal="true"] { animation: todo-reveal 2s ease-in-out 5; }
+@media (prefers-reduced-motion: reduce) {
+  .todo-card[data-reveal="true"] { animation: none; outline: 2px solid #b491fa; }
+}

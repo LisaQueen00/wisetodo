@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { TodoCard } from "./TodoCard";
 import type { Todo, TodoActions } from "./types";
 
@@ -57,7 +57,41 @@ function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, 
 }
 
 export function TodoList({ todos, actions }: { todos: readonly Todo[]; actions?: TodoActions }) {
+  const root = useRef<HTMLDivElement>(null);
+  const previous = useRef(todos);
+  const reveal = useRef<{ start?: ReturnType<typeof setTimeout>; expiry?: ReturnType<typeof setTimeout>; card?: HTMLElement }>({});
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(() => {
+    const current = reveal.current;
+    return () => {
+      clearTimeout(current.start); clearTimeout(current.expiry);
+      if (current.card) delete current.card.dataset.reveal;
+    };
+  }, []);
+  useEffect(() => {
+    const before = new Map(previous.current.map((todo) => [todo.id, todo]));
+    previous.current = todos;
+    const changed = todos.find((todo) => {
+      const old = before.get(todo.id);
+      return !old || old.topic !== todo.topic || old.priority !== todo.priority
+        || JSON.stringify(old.items) !== JSON.stringify(todo.items);
+    });
+    if (!changed) return;
+    const current = reveal.current;
+    clearTimeout(current.start); clearTimeout(current.expiry);
+    if (current.card) delete current.card.dataset.reveal;
+    current.start = setTimeout(() => {
+      setExpandedIds((ids) => new Set([...ids, changed.id]));
+      const card = Array.from(root.current?.querySelectorAll<HTMLElement>("[data-todo-id]") ?? [])
+        .find((node) => node.dataset.todoId === changed.id);
+      current.card = card;
+      if (card) {
+        card.dataset.reveal = "true";
+        card.scrollIntoView?.({ block: "nearest", behavior: "instant" });
+        current.expiry = setTimeout(() => { delete card.dataset.reveal; }, 10_000);
+      }
+    }, 0);
+  }, [todos]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const dragged = useRef<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -109,7 +143,7 @@ export function TodoList({ todos, actions }: { todos: readonly Todo[]; actions?:
   const completed = todos.filter((todo) => todo.completed);
 
   return (
-    <div className="space-y-7">
+    <div ref={root} className="space-y-7">
       {actions && <p className="text-xs text-white/45">拖动“排序”到同状态、同优先级的任务上，或使用上移 / 下移。</p>}
       {dragging && <p role="status">松开后移动到目标位置；不能跨完成状态或优先级。</p>}
       {saving && <p role="status">正在保存排序…</p>}

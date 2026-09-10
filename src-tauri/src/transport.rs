@@ -7,7 +7,7 @@ pub type EventSink = Arc<dyn Fn(Value) + Send + Sync>;
 type Pending = HashMap<String, mpsc::Sender<Result<String, String>>>;
 
 pub struct Transport {
-    input: Mutex<ChildStdin>,
+    input: Mutex<Option<ChildStdin>>,
     pending: Mutex<Pending>,
     next_id: AtomicU64,
     pub alive: AtomicBool,
@@ -16,7 +16,7 @@ pub struct Transport {
 
 impl Transport {
     pub fn new(input: ChildStdin, events: Option<EventSink>) -> Self {
-        Self { input: Mutex::new(input), pending: Mutex::new(HashMap::new()),
+        Self { input: Mutex::new(Some(input)), pending: Mutex::new(HashMap::new()),
             next_id: AtomicU64::new(0), alive: AtomicBool::new(true), events }
     }
 
@@ -25,6 +25,12 @@ impl Transport {
         if let Ok(mut pending) = self.pending.lock() {
             for (_, sender) in pending.drain() { let _ = sender.send(Err("后端已断开，请重试".into())); }
         }
+    }
+
+    pub fn close_input(&self) {
+        // EOF lets Python cancel runs and reap its parser/MCP children first.
+        // A blocked writer must not prevent the forced-stop fallback.
+        if let Ok(mut input) = self.input.try_lock() { input.take(); }
     }
 
     pub fn deliver(&self, line: String) -> bool {
@@ -50,6 +56,7 @@ impl Transport {
 
     fn send(&self, value: Value) -> Result<(), String> {
         let mut input = self.input.lock().map_err(|_| "后端写入不可用")?;
+        let input = input.as_mut().ok_or("后端正在关闭")?;
         writeln!(input, "{value}").and_then(|_| input.flush()).map_err(|_| "无法发送后端请求".into())
     }
 

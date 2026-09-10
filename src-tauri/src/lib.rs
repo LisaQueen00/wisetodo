@@ -1,5 +1,6 @@
 mod sidecar;
 mod transport;
+mod desktop;
 
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
@@ -147,15 +148,13 @@ async fn sessions_cancel(backend: tauri::State<'_, Arc<sidecar::TodoBackend>>, s
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = tauri::Manager::get_webview_window(app, "main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+            desktop::reveal(app);
         }))
-        .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_window_state::Builder::default().with_state_flags(desktop::WINDOW_FLAGS).build())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(tauri_plugin_autostart::Builder::new().arg("--background").build())
         .setup(|app| {
+            desktop::setup(app.handle())?;
             let database_path = app.path().app_data_dir()?.join("wisetodo.db");
             let handle = app.handle().clone();
             app.manage(Arc::new(sidecar::TodoBackend::with_events(database_path, Arc::new(move |event| {
@@ -163,12 +162,14 @@ pub fn run() {
             }))));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![health, todos_list, todos_create, todos_update, todos_delete, todos_set_item_completed, todos_move, sessions_list, sessions_get, sessions_create, sessions_delete, sessions_retry, sessions_send, sessions_cancel, settings_get, settings_save, settings_test])
+        .on_window_event(desktop::window_event)
+        .invoke_handler(tauri::generate_handler![desktop::desktop_status, desktop::desktop_pin, desktop::desktop_autostart, desktop::desktop_acknowledge, desktop::desktop_restart, health, todos_list, todos_create, todos_update, todos_delete, todos_set_item_completed, todos_move, sessions_list, sessions_get, sessions_create, sessions_delete, sessions_retry, sessions_send, sessions_cancel, settings_get, settings_save, settings_test])
         .build(tauri::generate_context!())
         .expect("error while building WiseTodo")
         .run(|app, event| {
             if matches!(event, tauri::RunEvent::Exit) {
                 app.state::<Arc<sidecar::TodoBackend>>().shutdown();
+                desktop::clean_exit(app);
             }
         });
 }

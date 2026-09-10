@@ -5,10 +5,13 @@ import { SessionPanel } from "./sessions/SessionPanel";
 import type { SessionApi } from "./sessions/types";
 import { SettingsPanel } from "./settings/SettingsPanel";
 import type { SettingsApi } from "./settings/desktop";
+import { DesktopControls } from "./desktop/DesktopControls";
+import type { DesktopApi } from "./desktop/api";
 
-function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi }: {
+function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi, desktopApi }: {
   loadTodos?: LoadTodos; mutations?: TodoMutations; preview?: boolean; sessionApi?: SessionApi;
   settingsApi?: SettingsApi;
+  desktopApi?: DesktopApi;
 }) {
   const [todoRevision, setTodoRevision] = useState(0);
   const onCommitted = useCallback(() => setTodoRevision((value) => value + 1), []);
@@ -20,7 +23,7 @@ function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi }:
             <h1 className="text-xl font-semibold tracking-tight">WiseTodo</h1>
             <p className="mt-1 text-xs text-white/45">一件一件，慢慢完成。</p>
           </div>
-          <span className="text-xs text-white/50">全部任务</span>
+          {desktopApi ? <DesktopControls api={desktopApi} /> : <span className="text-xs text-white/50">全部任务</span>}
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-5" tabIndex={0} aria-label="Todo 列表滚动区">
           {preview && <p className="mb-4 rounded-lg bg-white/5 p-3 text-xs text-white/60">示例数据预览 · 不会写入数据库</p>}

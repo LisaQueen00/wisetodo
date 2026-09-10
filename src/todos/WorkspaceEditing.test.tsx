@@ -49,8 +49,8 @@ it("creates, edits child rows, updates the visible list and retries a failed del
     topic: "Reading updated", priority: base.priority,
     items: [{ id: "child-1", topic: "Chapter 2" }, { id: undefined, topic: "Chapter 3" }],
   });
-  fireEvent.click(screen.getByRole("button", { name: "Reading updated" }));
-  const children = screen.getByRole("list", { name: "Reading updated的子项" });
+  // A successful write now expands the changed Todo automatically.
+  const children = await screen.findByRole("list", { name: "Reading updated的子项" });
   expect(within(children).getAllByRole("listitem").map((item) => item.textContent))
     .toEqual(["Chapter 2", "Chapter 3"]);
 

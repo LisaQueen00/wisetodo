@@ -240,6 +240,12 @@ impl Sidecar {
 impl Drop for Sidecar {
     fn drop(&mut self) {
         self.transport.fail();
+        self.transport.close_input();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_millis(500);
+        while std::time::Instant::now() < deadline {
+            if matches!(self.child.try_wait(), Ok(Some(_))) { return; }
+            thread::sleep(std::time::Duration::from_millis(10));
+        }
         let _ = self.child.kill();
         let _ = self.child.wait();
     }

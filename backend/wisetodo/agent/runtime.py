@@ -12,7 +12,6 @@ from sqlalchemy.orm import object_session
 
 from wisetodo.agent.errors import AgentExecutionError, map_agent_error
 from wisetodo.agent.generation import InvalidAgentOutputError, ResultGenerator
-from wisetodo.agent.graph import build_agent_graph
 from wisetodo.agent.prompts import build_agent_request
 from wisetodo.agent.results import (
     AGENT_RESULT_ADAPTER,
@@ -178,6 +177,9 @@ class AgentRuntime:
                 )
                 stage = "model"
                 async with self._providers.open() as provider:
+                    # Manual Todo use and idle startup do not need LangGraph loaded.
+                    from wisetodo.agent.graph import build_agent_graph
+
                     generator = ResultGenerator(provider)
                     graph = build_agent_graph(generator)
                     state = await graph.ainvoke(

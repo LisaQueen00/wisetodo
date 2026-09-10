@@ -48,7 +48,7 @@ export function TodoCard({ todo, expanded, onToggle, actions, editing, editLocke
   }
 
   if (editing && actions) return (
-    <li className="todo-card rounded-2xl border p-4" data-priority={todo.priority}
+    <li data-todo-id={todo.id} className="todo-card rounded-2xl border p-4" data-priority={todo.priority}
       data-completed={todo.completed} data-editing="true">
       <TodoEditor todo={todo} mutations={actions.mutations} onSaved={actions.onSaved} onClose={() => onEdit(null)} />
     </li>

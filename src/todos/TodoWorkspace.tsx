@@ -93,9 +93,8 @@ export function TodoWorkspace({ loadTodos, mutations, refreshToken = 0 }: { load
         <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center">
           <p>还没有 Todo</p><p className="mt-2 text-sm text-white/45">任务创建后会显示在这里。</p>
         </div>
-      ) : (
-        <TodoList todos={state.todos} actions={actions} />
-      )}
+      ) : null}
+      <TodoList todos={state.todos} actions={actions} />
     </>
   );
 }
