@@ -3,12 +3,14 @@ name: learn-github-project
 description: 根据项目真实入口和模块组织学习一个开源项目的 Todo
 accepts: [text, github_url]
 tools:
-  optional: [read_github_project, read_url]
+  optional: [read_github_project, read_url, search_projects]
 ---
 
 # 学习一个开源项目
 
 仅用于理解项目和学习代码；用户要提交贡献时，应采用贡献流程，而不是机械套用学习流程。
+
+用户只给明确项目名时，使用 search_projects 定位；真实结果唯一明确匹配后继续 read_github_project，不要求用户代贴链接或 README。仅给学习方向时搜索候选，让用户选择一个；有歧义才澄清。搜索结果不等于仓库正文，必须在获得真实结果后再调用读取，不把有依赖的调用放进同一批。Runtime 允许搜索后继续读取，读取后收敛到结果。
 
 先使用用户提供的项目资料。若只有仓库 URL，在本次工具列表允许时读取 README、目录结构和必要的入门文档；没有专用工具时才考虑支持该链接的 read_url。URL 不证明已经读取仓库。没有读取能力或无法获得关键资料时，请用户提供 README 或相关目录，不猜测模块、文件名、安装命令和技术栈。
 

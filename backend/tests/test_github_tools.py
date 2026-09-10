@@ -47,6 +47,8 @@ def github_api(monkeypatch):
                 {"path": "src", "type": "dir"},
                 {"path": "docs", "type": "dir"},
             ],
+            "/repos/sample/cli/contents/src": [{"path": "src/cli.py", "type": "file"}],
+            "/repos/sample/cli/contents/docs": [{"path": "docs/usage.md", "type": "file"}],
             "/repos/sample/cli/issues/7": {
                 "number": 7,
                 "title": "Correct usage example",
@@ -80,8 +82,8 @@ async def test_read_repository_facts_and_specific_issue(github_api):
     assert result["partial"] is True
     assert result["issues"][0]["url"].endswith("/issues/7")
     assert "docs/usage.md" in result["documents"][1]["text"]
-    assert result["entries"][0]["path"] == "src"
-    assert len(github_api) == 5
+    assert {row["path"] for row in result["entries"]} >= {"src", "src/cli.py", "docs/usage.md"}
+    assert len(github_api) == 7
 
 
 async def test_read_root_excludes_pull_requests(github_api):

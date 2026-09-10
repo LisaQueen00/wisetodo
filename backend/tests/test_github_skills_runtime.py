@@ -61,7 +61,7 @@ async def test_github_skill_flows(tmp_path, request, mode, scenario):
                 }
             elif scenario == "search" and index == 2:
                 assert "https://github.com/sample/cli" in request.messages[-1].content
-                assert not request.tools
+                assert request.tools  # Search may now be followed by a dependent read.
                 output = {
                     "type": "clarification",
                     "question": "候选 https://github.com/sample/cli 是 Python CLI，是否选择它？",

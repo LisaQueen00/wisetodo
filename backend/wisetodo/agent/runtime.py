@@ -201,7 +201,13 @@ class AgentRuntime:
                     )
                     generated = state["generation"]
                     result = generated.result
-                    if isinstance(result, ToolCallsResult):
+                    tool_round = 0
+                    while isinstance(result, ToolCallsResult):
+                        tool_round += 1
+                        # Search needs a dependent read. Keep ordinary read-only flows short.
+                        may_continue = tool_round < 3 and any(
+                            call.tool == "search_projects" for call in result.calls
+                        )
                         async with httpx.AsyncClient(
                             follow_redirects=False, trust_env=False
                         ) as client:
@@ -246,7 +252,7 @@ class AgentRuntime:
                             build_agent_request(
                                 messages,
                                 mode=self._mode,
-                                phase="final",
+                                phase="decision" if may_continue else "final",
                                 skills=candidates,
                                 tools=registry.definitions(),
                             )

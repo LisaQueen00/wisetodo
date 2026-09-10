@@ -143,6 +143,30 @@ async def read_github_project(arguments: dict[str, JsonValue]) -> JsonValue:
                 )
                 break
         root = await _get(client, f"{prefix}/contents")
+        # A bounded second-level view of common implementation/documentation directories.
+        if isinstance(root, list):
+            available = {
+                entry.get("path")
+                for entry in root
+                if isinstance(entry, dict)
+                and entry.get("type") == "dir"
+                and isinstance(entry.get("path"), str)
+            }
+            for directory in [
+                p for p in ("src", "lib", "docs", "examples", "tests") if p in available
+            ][:3]:
+                children = await _get(client, f"{prefix}/contents/{directory}")
+                if isinstance(children, list):
+                    for child in children[:15]:
+                        if isinstance(child, dict):
+                            _append(
+                                result,
+                                "entries",
+                                {
+                                    "path": _text(child.get("path"), 128),
+                                    "type": _text(child.get("type"), 16),
+                                },
+                            )
         issues = (
             await _get(client, f"{prefix}/issues/{issue}")
             if issue
@@ -196,7 +220,10 @@ async def search_projects(arguments: dict[str, JsonValue]) -> JsonValue:
         found = await _get(client, "/search/repositories", q=query, per_page="3")
     result: dict[str, JsonValue] = {
         "partial": True,
-        "notice": "候选供用户选择一个项目；搜索排名/星数不证明适合新手，未读取贡献指南或认领情况。",
+        "notice": (
+            "明确项目名的唯一匹配可继续读取；方向推荐或歧义需用户选择。"
+            "排名/星数不证明适合新手，未读取仓库正文。"
+        ),
         "candidates": [],
     }
     if not isinstance(found, dict) or not isinstance(found.get("items"), list):
