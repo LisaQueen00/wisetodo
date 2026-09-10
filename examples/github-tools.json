@@ -1,0 +1,26 @@
+{
+  "tools": [
+    {
+      "name": "read_github_project",
+      "description": "只读公开 GitHub 仓库的 README、根目录、贡献指南和有限 issue；支持仓库根链接或具体 issue 链接，不执行代码。",
+      "input_schema": {
+        "type": "object",
+        "properties": {"url": {"type": "string", "maxLength": 512}},
+        "required": ["url"],
+        "additionalProperties": false
+      },
+      "transport": {"type": "local", "handler": "read_github_project"}
+    },
+    {
+      "name": "search_projects",
+      "description": "按用户偏好搜索最多三个公开 GitHub 仓库候选，供用户选择一个；不证明新手友好或存在可认领事项。",
+      "input_schema": {
+        "type": "object",
+        "properties": {"query": {"type": "string", "minLength": 1, "maxLength": 200}},
+        "required": ["query"],
+        "additionalProperties": false
+      },
+      "transport": {"type": "local", "handler": "search_projects"}
+    }
+  ]
+}

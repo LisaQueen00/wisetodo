@@ -38,7 +38,23 @@ stdio 连接使用 `{"type":"stdio","command":"可信可执行文件路径","arg
 函数接收 JSON 参数对象，返回 JSON 值，须支持取消且不能阻塞事件循环。
 配置使用 `{"type":"local","handler":"已注册名称"}`。
 可以通过配置新增已注册 handler 的工具别名；不能从配置导入任意 Python 模块。
-当前白名单包含 `parse_pdf`，由 Runtime 绑定本次用户附件引用；新代码需更新应用，外部扩展可使用 MCP。
+当前白名单包含 `parse_pdf`、`read_github_project` 和 `search_projects`。PDF 由 Runtime 绑定本次用户附件引用；GitHub 工具只发起公开 API 的 GET 请求。新代码需更新应用，外部扩展可使用 MCP。
+
+## 学习 GitHub 项目与参与贡献
+
+安装 `skills/learn-github-project/`、`skills/join-open-source/` 到上述 Skill 目录，并将 [github-tools.json](../examples/github-tools.json) 的两个工具项合入现有配置。保留 PDF 等已有项，不覆盖整个文件；下一个 Run 生效。
+
+- `read_github_project({"url":"https://github.com/owner/repo"})`：公开仓库 README 摘录、根目录、常见位置贡献指南及有限 open issue；也支持 `/issues/123` 以读取明确的贡献对象（返回其实际状态，并排除 PR）。
+- `search_projects({"query":"language:Python cli archived:false"})`：最多三个公开仓库候选，条件应来自用户偏好。搜索后先澄清选定一个，下一轮再读取项目资料，不为每个候选创建 Todo。
+
+普通仓库地址可带 `.git` 或末尾 `/`。分支、文件、评论锚点、查询参数及其他域名不支持；不要擅自把特定分支需求替换为默认分支。已粘贴足够真实资料时可不使用工具。
+
+工具不克隆、不执行代码，不读取本地 Git 配置或令牌，不认领 issue、不发评论、不提交 PR。
+请求固定为 `https://api.github.com`，不跟随重定向或 `download_url`，不读取代理环境；首版无认证，仅支持公开仓库。限流/服务错误安全失败，不自动重试；仓库 404 返回“未取得资料”，不能据此断言仓库不存在。
+
+每次工具调用沿用 30 秒总超时；每个 HTTP 请求 10 秒、响应 1 MiB 上限。读取最多七个端点，README 3,500 字符、贡献指南 2,000 字符、根目录前 30 项、issue 首批最多五项；总结果不超过 12,000 字符，始终注明有限资料。不是递归代码分析，也不是固定提交的原子快照。缺失/截断资料必须澄清，不能补造模块、函数或贡献资格。
+
+接口依据：[GitHub 仓库内容 API](https://docs.github.com/en/rest/repos/contents)、[搜索 API](https://docs.github.com/en/rest/search/search)、[Issue API](https://docs.github.com/en/rest/issues/issues)。测试使用模拟 HTTP 与模型，真实网络/模型效果仍需用户按需验收。
 
 ## 阅读 PDF
 
