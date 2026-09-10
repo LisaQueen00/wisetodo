@@ -38,6 +38,7 @@ from wisetodo.skills import SkillSource
 from wisetodo.skills.inputs import input_types
 from wisetodo.todos import TodoService
 from wisetodo.tools.defaults import builtin_tools
+from wisetodo.tools.failures import tool_failure_message
 from wisetodo.tools.local_handlers import registered_handlers
 from wisetodo.tools.model_content import model_tool_results
 from wisetodo.tools.registry import ToolRegistry
@@ -298,6 +299,17 @@ class AgentRuntime:
         except AgentExecutionError:
             raise
         except Exception as error:
+            from wisetodo.tools.transport import ToolTransportError
+
+            if isinstance(error, ToolTransportError):
+                with self._sessions.write_history(session_id) as record:
+                    self._owned(record, run_id)
+                    for event in reversed(record.tool_events):
+                        if event.run_id == run_id and event.event_type == "failed":
+                            event.payload = {
+                                "error": {"user_message": tool_failure_message(str(error))}
+                            }
+                            break
             raise AgentExecutionError(map_agent_error(error, stage=stage)) from None
 
     def _commit(self, session_id: str, run_id: str, pending: dict[str, Any]) -> None:

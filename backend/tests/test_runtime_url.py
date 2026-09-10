@@ -33,7 +33,7 @@ async def test_url_to_readonly_tool_or_clarification(tmp_path, mode, with_tool):
                             "required": ["url"],
                             "properties": {"url": {"type": "string"}},
                         },
-                        "transport": {"type": "local", "handler": "read_url"},
+                        "transport": {"type": "local", "handler": "mock_read_url"},
                     }
                 ]
             }
@@ -90,7 +90,7 @@ async def test_url_to_readonly_tool_or_clarification(tmp_path, mode, with_tool):
             provider,
             mode=mode,
             tool_config=path if with_tool else None,
-            handlers={"read_url": read_url},
+            handlers={"mock_read_url": read_url},
         )
         incoming = message().model_copy(update={"urls": [url]})
         result = await sessions.submit(sessions.create().id, incoming)

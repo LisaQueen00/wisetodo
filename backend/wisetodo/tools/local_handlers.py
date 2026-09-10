@@ -4,6 +4,7 @@ from wisetodo.files.pdf_tool import pdf_handler
 from wisetodo.files.references import FileReferences
 from wisetodo.tools.github import read_github_project, search_projects
 from wisetodo.tools.transport import LocalHandler
+from wisetodo.tools.web import read_url
 
 
 def registered_handlers(references: FileReferences | None = None) -> dict[str, LocalHandler]:
@@ -16,6 +17,7 @@ def registered_handlers(references: FileReferences | None = None) -> dict[str, L
     Runtime replaces the empty startup file scope with the current Run's allowlist.
     """
     return {
+        "read_url": read_url,
         "parse_pdf": pdf_handler(references if references is not None else FileReferences([])),
         "read_github_project": read_github_project,
         "search_projects": search_projects,

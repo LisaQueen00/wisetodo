@@ -135,7 +135,9 @@ async def test_failures_do_not_redirect_or_leak_body(monkeypatch, status):
         "_client",
         lambda: httpx.AsyncClient(transport=httpx.MockTransport(reply), follow_redirects=False),
     )
-    with pytest.raises(ToolTransportError, match="^github_unavailable$"):
+    with pytest.raises(
+        ToolTransportError, match="^rate_limited$" if status == 429 else "^github_unavailable$"
+    ):
         await github.read_github_project({"url": "https://github.com/a/b"})
     assert len(seen) == 1
 

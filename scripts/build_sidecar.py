@@ -44,6 +44,8 @@ def main():
         f"{ROOT / 'backend' / 'alembic.ini'}:.",
         "--add-data",
         f"{ROOT / 'backend' / 'alembic'}:alembic",
+        "--add-data",
+        f"{ROOT / 'skills'}:builtin_skills",
     ]
     for package in ("wisetodo", "langgraph", "keyring"):
         args.extend(["--collect-all", package])

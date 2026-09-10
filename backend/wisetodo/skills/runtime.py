@@ -22,6 +22,7 @@ class RunSkillSnapshot:
 @dataclass(frozen=True)
 class SkillSource:
     root: Path
+    fallback: Path | None = None
 
     def __post_init__(self) -> None:
         if not self.root.is_absolute():
@@ -34,4 +35,15 @@ class SkillSource:
         new model Run must call again; a pending Todo-only commit needs no reload.
         File reads are independent, not an atomic multi-file filesystem transaction.
         """
-        return RunSkillSnapshot(load_skills(self.root))
+        root = self.root
+        if not root.exists() and self.fallback is not None:
+            root = self.fallback
+        return RunSkillSnapshot(load_skills(root))
+
+
+def builtin_skill_root() -> Path:
+    import sys
+
+    if getattr(sys, "frozen", False):
+        return Path(__file__).resolve().parents[2] / "builtin_skills"
+    return Path(__file__).resolve().parents[3] / "skills"

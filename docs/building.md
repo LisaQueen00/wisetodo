@@ -36,7 +36,7 @@ pnpm exec tauri build --config src-tauri/tauri.bundle.conf.json --bundles dmg --
 
 `build_sidecar.py` 用当前虚拟环境中的 PyInstaller 生成单文件程序，包含 Alembic 配置/迁移和动态导入依赖。先在临时目录启动两次，验证冻结程序迁移、JSON Lines 查询与重开；成功后复制到 `src-tauri/binaries/wisetodo-sidecar-<host-triple>[.exe]`。命名与配置遵循 [Tauri externalBin 规则](https://v2.tauri.app/develop/sidecar/)，冻结参数见 [PyInstaller 文档](https://pyinstaller.org/en/stable/usage.html)。
 
-开发配置、数据库、密钥和 `.local` 不作为打包资源。Skill 和 Tool 仍从应用数据目录加载；本项不擅自启用示例工具或复制用户插件。发布时示例能力安装体验仍需验收。
+开发配置、数据库、密钥和 `.local` 不作为打包资源。Phase 8.4 起随包收集首批 Skill，缺少用户配置时使用内置基础 Skill/Tool；已有用户配置保持优先，不复制用户插件。范围见 docs/web-and-builtin-tools.md。
 
 CI 先运行后端、前端及 Rust 测试，再冻结 Sidecar、离线冒烟、打包，保存 artifact 14 天，不创建 Release。pnpm/Cargo 使用锁文件；Python 目前依赖版本范围、Rust stable 和 Actions 主版本仍可漂移，尚不属于逐字节可重复构建。
 

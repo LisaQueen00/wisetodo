@@ -59,6 +59,10 @@ async def _get(client: httpx.AsyncClient, path: str, **params: str) -> Any:
     async with client.stream("GET", f"https://api.github.com{path}", params=params) as response:
         if response.status_code == 404:
             return None
+        if response.status_code == 429 or (
+            response.status_code == 403 and response.headers.get("x-ratelimit-remaining") == "0"
+        ):
+            raise ToolTransportError("rate_limited")
         if response.status_code != 200:
             raise ToolTransportError("github_unavailable")
         data = bytearray()

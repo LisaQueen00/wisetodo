@@ -17,6 +17,7 @@ from wisetodo.settings import SettingsService
 from wisetodo.settings.development import DevelopmentSettingsStore
 from wisetodo.settings.storage import create_settings_store
 from wisetodo.skills import SkillSource
+from wisetodo.skills.runtime import builtin_skill_root
 from wisetodo.todos import TodoService
 from wisetodo.tools.local_handlers import registered_handlers
 
@@ -73,7 +74,10 @@ def main() -> None:
             todo_service,
             create_provider_scope(settings_service),
             mode=args.model_mode,
-            skill_source=SkillSource(args.skills_dir or args.database.parent / "skills"),
+            skill_source=SkillSource(
+                args.skills_dir or args.database.parent / "skills",
+                fallback=builtin_skill_root() if args.skills_dir is None else None,
+            ),
             tool_config=args.tool_config or args.database.parent / "tool-settings.json",
             optional_tool_config=args.tool_config is None,
             handlers=registered_handlers(),

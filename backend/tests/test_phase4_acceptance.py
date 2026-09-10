@@ -50,6 +50,7 @@ async def test_same_runtime_discovers_additions_changes_and_removal(tmp_path, mo
             self.requests.append(request)
             if not version:
                 assert {tool.name for tool in request.tools} == {
+                    "read_url",
                     "parse_pdf",
                     "read_github_project",
                     "search_projects",

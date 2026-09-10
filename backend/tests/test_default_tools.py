@@ -19,7 +19,12 @@ def load(path, **kwargs):
 def test_missing_optional_config_uses_detached_defaults_without_writes(tmp_path):
     path = tmp_path / "tool-settings.json"
     registry = load(path, optional=True)
-    assert registry.names == ("parse_pdf", "read_github_project", "search_projects")
+    assert set(registry.names) == {
+        "read_url",
+        "parse_pdf",
+        "read_github_project",
+        "search_projects",
+    }
     assert not path.exists()
     configs = builtin_tools()
     configs[0].input_schema.clear()
@@ -39,14 +44,16 @@ def test_existing_empty_config_disables_every_default(tmp_path, content):
 def test_user_config_replaces_defaults_and_reload_keeps_old_snapshot(tmp_path):
     path = tmp_path / "tools.json"
     old = load(path, optional=True)
-    config = builtin_tools()[1].model_dump(mode="json")
+    config = next(t for t in builtin_tools() if t.name == "read_github_project").model_dump(
+        mode="json"
+    )
     config["description"] = "User override"
     content = json.dumps({"tools": [config]})
     path.write_text(content)
     current = load(path, optional=True)
     assert current.names == ("read_github_project",)
     assert current.definitions()[0].description == "User override"
-    assert len(old.names) == 3
+    assert len(old.names) == 4
     assert path.read_text() == content
 
 
@@ -80,6 +87,7 @@ async def test_runtime_exposes_defaults_then_honors_disable(tmp_path, mode):
         )
         await sessions.submit(sessions.create().id, message())
         assert {tool.name for tool in scope.requests[0].tools} == {
+            "read_url",
             "parse_pdf",
             "read_github_project",
             "search_projects",

@@ -6,6 +6,12 @@ from wisetodo.tools.config import ToolConfig
 def builtin_tools() -> tuple[ToolConfig, ...]:
     definitions = (
         (
+            "read_url",
+            "读取公开静态网页正文、标题和链接；不支持登录或动态渲染页面。",
+            "url",
+            {"type": "string", "maxLength": 2048},
+        ),
+        (
             "parse_pdf",
             "读取本次附件 PDF 的目录和有限正文；仅接受附件 file_ref，不接受路径。",
             "file_ref",
