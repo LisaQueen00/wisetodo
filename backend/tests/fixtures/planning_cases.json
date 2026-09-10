@@ -1,0 +1,58 @@
+[
+  {
+    "id": "book_chapters",
+    "input": "我要阅读这本书，真实目录是：第一章 初识数据库；第二章 查询基础。",
+    "skill": "reading-book",
+    "items": ["阅读第一章：初识数据库", "阅读第二章：查询基础"],
+    "reject": "不得改为第一周/第二周，也不得附加了解全书结构或掌握基础概念。"
+  },
+  {
+    "id": "book_missing_structure",
+    "input": "帮我按章节阅读一本叫《未知之书》的书，我没有目录，也没有附件。",
+    "skill": "reading-book",
+    "question": "请提供这本书的真实目录。",
+    "reject": "不能凭书名编造章节，不能用阅读前半本/后半本充数。"
+  },
+  {
+    "id": "book_single_section",
+    "input": "只读这一个章节：第八章 事务。没有提供小节，我也不需要笔记或总结。",
+    "skill": "reading-book",
+    "question": "请提供第八章的真实小节，或确认是否扩大阅读范围。",
+    "reject": "不得为凑两个子项编造小节或强制添加笔记。"
+  },
+  {
+    "id": "time_in_real_title",
+    "input": "这本小说只有两章，目录原文为：第一天；第二天。请按原文标题生成阅读任务。",
+    "skill": "reading-book",
+    "items": ["阅读第一天", "阅读第二天"],
+    "reject": "标题中的时间词不是人为排期，不可删改真实标题。"
+  },
+  {
+    "id": "project_actual_entry",
+    "input": "学习这个 CLI 项目。我已确认 README 指定运行 examples/hello.py，参数解析入口为 src/cli.py。只学习这条执行路径。",
+    "skill": "learn-github-project",
+    "items": ["运行 examples/hello.py 示例", "从 src/cli.py 追踪参数解析"],
+    "reject": "不得套用书籍章节，也不得编造数据库、服务端或内部函数名。"
+  },
+  {
+    "id": "practical_fallback",
+    "input": "我要把书桌上明确不再需要的纸质资料回收，剩余资料按类别放回文件夹。帮我拆成可操作事项，不需要排时间。",
+    "skill": null,
+    "items": ["分出不再需要的纸质资料并放入回收处", "把剩余资料分类并放回文件夹"],
+    "reject": "目标和对象已明确，无需索要目录；不得按周排期或套用阅读/开源模板。"
+  },
+  {
+    "id": "documentation_contribution",
+    "input": "我要修正文档贡献：已确认 issue 7 指出 docs/usage.md 的选项名写错，贡献指南要求提交文档 PR。只做这项修改。",
+    "skill": "join-open-source",
+    "items": ["修正 docs/usage.md 的选项名示例", "按贡献指南准备文档 PR"],
+    "reject": "不得强制添加代码修复/单元测试模板；不实际发 PR，不声称已认领 issue。"
+  },
+  {
+    "id": "multiple_targets",
+    "input": "同时给我做一个读书计划和一个开源贡献计划，书和项目都还没选。",
+    "skill": "join-open-source",
+    "question": "你想先处理读书还是开源贡献？",
+    "reject": "不能创建多个 Todo，也不能把两个独立目标塞进一个 Todo。"
+  }
+]
