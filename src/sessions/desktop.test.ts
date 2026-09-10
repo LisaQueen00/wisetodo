@@ -59,5 +59,5 @@ it("rejects invalid lists and delete acknowledgements and propagates transport f
   await expect(desktopSessionApi.list()).rejects.toThrow();
   await expect(desktopSessionApi.delete("one")).rejects.toThrow();
   vi.mocked(invoke).mockRejectedValue(new Error("offline"));
-  await expect(desktopSessionApi.create("")).rejects.toThrow("offline");
+  await expect(desktopSessionApi.create("")).rejects.toThrow("Desktop request failed");
 });

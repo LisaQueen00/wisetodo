@@ -88,6 +88,6 @@ describe("loadDesktopTodos", () => {
   it("propagates desktop failures for the workspace retry state", async () => {
     const error = { code: "DATABASE_ERROR", message: "Database unavailable" };
     vi.mocked(invoke).mockRejectedValue(error);
-    await expect(loadDesktopTodos()).rejects.toBe(error);
+    await expect(loadDesktopTodos()).rejects.toBe("处理操作时发生内部错误，请核对当前状态后重试。");
   });
 });

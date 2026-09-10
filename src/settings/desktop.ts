@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../errors/invoke";
 
 export type SettingsView = { base_url: string; model: string; has_api_key: boolean };
 export type SettingsUpdate = { base_url: string; model: string } & (

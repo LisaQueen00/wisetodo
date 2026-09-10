@@ -7,6 +7,7 @@ import { SettingsPanel } from "./settings/SettingsPanel";
 import type { SettingsApi } from "./settings/desktop";
 import { DesktopControls } from "./desktop/DesktopControls";
 import type { DesktopApi } from "./desktop/api";
+import { ErrorNotice } from "./errors/ErrorNotice";
 
 function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi, desktopApi }: {
   loadTodos?: LoadTodos; mutations?: TodoMutations; preview?: boolean; sessionApi?: SessionApi;
@@ -17,6 +18,7 @@ function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi, d
   const onCommitted = useCallback(() => setTodoRevision((value) => value + 1), []);
   return (
     <main className="grid h-dvh min-h-[520px] grid-cols-[minmax(0,3fr)_minmax(0,2fr)] overflow-hidden bg-[var(--surface-window)] text-[var(--text-primary)]">
+      <ErrorNotice />
       <section aria-label="Todo 工作区" className="flex min-h-0 min-w-0 flex-col border-r border-white/10">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 p-5">
           <div>

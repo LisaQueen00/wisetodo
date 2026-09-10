@@ -257,6 +257,9 @@ fn decode_response(line: &str, request_id: &str) -> Result<Value, String> {
         return Err("Todo 服务响应与请求不匹配".into());
     }
     if let Some(error) = response.get("error") {
+        if let Some(code) = error["code"].as_str() {
+            return Err(json!({"code": code, "retryable": error["retryable"].as_bool().unwrap_or(false)}).to_string());
+        }
         return Err(error["user_message"]
             .as_str()
             .unwrap_or("读取 Todo 失败，请重试")
@@ -275,6 +278,18 @@ fn decode_response(line: &str, request_id: &str) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn forwards_only_safe_error_identity() {
+        let response = json!({"type":"response", "requestId":"safe", "error": {
+            "code":"FILE_UNAVAILABLE", "retryable":true,
+            "message":"SECRET", "user_message":"SECRET", "details":{"key":"SECRET"}
+        }});
+        let failure = decode_response(&response.to_string(), "safe").unwrap_err();
+        assert_eq!(serde_json::from_str::<Value>(&failure).unwrap(),
+            json!({"code":"FILE_UNAVAILABLE", "retryable":true}));
+        assert!(!failure.contains("SECRET"));
+    }
 
     #[test]
     #[cfg(debug_assertions)]
@@ -371,7 +386,8 @@ finally:
         let session_id = history["session"]["id"].as_str().unwrap().to_owned();
         assert_eq!(backend.sessions_get(session_id.clone()).unwrap(), history);
         let message = json!({"message_id":"7c2d7815-6e80-43af-a36a-ec58526ab877", "content":"你好\n消息保存测试", "urls":["https://example.com/book"]});
-        assert!(backend.sessions_send(session_id.clone(), message.clone()).unwrap_err().contains("设置"));
+        let failure = backend.sessions_send(session_id.clone(), message.clone()).unwrap_err();
+        assert_eq!(serde_json::from_str::<Value>(&failure).unwrap()["code"], "SETTINGS_VALIDATION_FAILED");
         let saved = backend.sessions_get(session_id.clone()).unwrap();
         assert_eq!(saved["session"]["status"], "failed");
         assert_eq!(saved["session"]["messages"][0]["content"], "你好\n消息保存测试");

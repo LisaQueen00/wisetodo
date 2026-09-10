@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../errors/invoke";
 import type { LoadTodos, Todo, TodoItem, TodoMutations } from "./types";
 
 function isObject(value: unknown): value is Record<string, unknown> {

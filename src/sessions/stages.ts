@@ -1,4 +1,5 @@
 import type { SessionHistory, ToolEvent } from "./types";
+import { decodeError, errorMessages } from "../errors/messages";
 
 export interface ToolStage {
   key: string;
@@ -19,6 +20,8 @@ function safeSummary(event: ToolEvent): string | undefined {
   // results, stack traces, provider messages or serialized payloads.
   if (event.event_type === "failed") {
     const error = event.payload.error;
+    const mapped = decodeError(error);
+    if (mapped) return errorMessages[mapped.code];
     return error && typeof error === "object" && !Array.isArray(error)
       ? shortText((error as Record<string, unknown>).user_message) : undefined;
   }
