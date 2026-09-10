@@ -37,6 +37,7 @@ from wisetodo.settings.storage import SettingsStorageError
 from wisetodo.skills import SkillSource
 from wisetodo.skills.inputs import input_types
 from wisetodo.todos import TodoService
+from wisetodo.tools.defaults import builtin_tools
 from wisetodo.tools.local_handlers import registered_handlers
 from wisetodo.tools.model_content import model_tool_results
 from wisetodo.tools.registry import ToolRegistry
@@ -123,6 +124,7 @@ class AgentRuntime:
                         self._tool_config,
                         optional=self._optional_tool_config,
                         handlers=handlers,
+                        defaults=builtin_tools() if self._optional_tool_config else (),
                     )
                     if self._tool_config is not None
                     else (ToolRegistry(), {})

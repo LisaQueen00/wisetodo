@@ -17,7 +17,11 @@ class ToolSettings(ConfigModel):
 
 
 def load_tools(
-    path: Path, *, optional: bool = False, handlers: Iterable[str] = ()
+    path: Path,
+    *,
+    optional: bool = False,
+    handlers: Iterable[str] = (),
+    defaults: Iterable[ToolConfig] = (),
 ) -> tuple[ToolRegistry, dict[str, McpSessionFactory]]:
     if not path.is_absolute():
         raise ValueError("Tool configuration requires absolute path")
@@ -27,11 +31,13 @@ def load_tools(
                 data = stream.read(256 * 1024 + 1)
         except FileNotFoundError:
             if optional:
-                return ToolRegistry(), {}
-            raise
-        if len(data) > 256 * 1024:
-            raise ValueError("oversized")
-        settings = ToolSettings.model_validate_json(data)
+                settings = ToolSettings(tools=list(defaults))
+            else:
+                raise
+        else:
+            if len(data) > 256 * 1024:
+                raise ValueError("oversized")
+            settings = ToolSettings.model_validate_json(data)
         registry = ToolRegistry(settings.tools)
         servers = server_factories(settings.servers)
         for config in settings.tools:

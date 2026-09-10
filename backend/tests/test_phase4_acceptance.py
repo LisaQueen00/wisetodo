@@ -49,7 +49,11 @@ async def test_same_runtime_discovers_additions_changes_and_removal(tmp_path, mo
         async def complete(self, request):
             self.requests.append(request)
             if not version:
-                assert not request.tools
+                assert {tool.name for tool in request.tools} == {
+                    "parse_pdf",
+                    "read_github_project",
+                    "search_projects",
+                }
                 assert "guidance-" not in request.messages[0].content
             else:
                 assert f"guidance-{version}" in request.messages[0].content
