@@ -24,6 +24,9 @@ def test_frozen_smoke_requires_valid_ipc_on_both_starts(tmp_path, monkeypatch, r
 
     def run(args, **kwargs):
         calls.append((args, kwargs))
+        assert kwargs["creationflags"] == (
+            subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+        )
         assert Path(args[-1]).is_absolute()
         assert json.loads(kwargs["input"])["method"] == "todos.list"
         return subprocess.CompletedProcess(args, 0, stdout=json.dumps(response))

@@ -27,6 +27,7 @@ def main():
                 cwd=directory,
                 timeout=120,
                 check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
             )
             response = json.loads(result.stdout)
             if response.get("requestId") != "smoke" or response.get("error"):
