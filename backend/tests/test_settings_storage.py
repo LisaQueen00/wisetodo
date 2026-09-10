@@ -1,11 +1,11 @@
 import json
-import logging
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
+from wisetodo import diagnostics
 from wisetodo.settings import SettingsService, SettingsUpdate
 from wisetodo.settings.storage import (
     FileSettingsStore,
@@ -100,20 +100,21 @@ def test_failed_save_preserves_old_configuration(
 
 def test_cleanup_failure_is_not_reported_as_failed_commit(
     tmp_path: Path,
-    caplog: pytest.LogCaptureFixture,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Alembic logging setup in earlier tests may disable existing named loggers.
-    monkeypatch.setattr(logging.getLogger("wisetodo.settings.storage"), "disabled", False)
     credentials = Credentials()
     service = SettingsService(FileSettingsStore(tmp_path / "settings.json", credentials))
     service.save(request(key_action="replace", api_key="old-secret"))
     credentials.fail_delete = True
-    assert not service.save(request(key_action="clear")).has_api_key
+    assert diagnostics.start(tmp_path / "logs")
+    try:
+        assert not service.save(request(key_action="clear")).has_api_key
+    finally:
+        diagnostics.stop()
     assert service.resolve().api_key is None
-    assert "cleanup failed" in caplog.text
-    assert "sensitive-error-content" not in caplog.text
-    assert "old-secret" not in caplog.text
+    log = (tmp_path / "logs/wisetodo.log").read_text(encoding="utf-8")
+    assert "credential_cleanup_failed" in log
+    assert "sensitive-error-content" not in log
+    assert "old-secret" not in log
 
 
 @pytest.mark.parametrize("action", ["clear", "replace"])

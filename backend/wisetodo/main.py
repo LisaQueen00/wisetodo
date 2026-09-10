@@ -6,8 +6,10 @@ import sys
 from io import TextIOWrapper
 from pathlib import Path
 
+from wisetodo import diagnostics
 from wisetodo.agent.runtime import AgentRuntime
 from wisetodo.database import initialize_database
+from wisetodo.diagnostics import Event
 from wisetodo.ipc.server import run_stdio_server
 from wisetodo.model.runtime import create_provider_scope
 from wisetodo.sessions.service import SessionService
@@ -36,6 +38,8 @@ def main() -> None:
     parser.add_argument("--tool-config", type=Path, help="Explicit trusted tool JSON path")
     parser.add_argument("--skills-dir", type=Path, help="Absolute Skill directory")
     args = parser.parse_args()
+    if not args.database.is_absolute():
+        parser.error("--database requires an absolute path")
     if args.skills_dir is not None and not args.skills_dir.is_absolute():
         parser.error("--skills-dir requires an absolute path")
     if args.tool_config is not None and not args.tool_config.is_absolute():
@@ -43,9 +47,14 @@ def main() -> None:
     if args.dev_model_config is not None and not args.dev_model_config.is_absolute():
         parser.error("--dev-model-config requires an absolute path")
 
+    if not diagnostics.start(args.database.parent / "logs"):
+        print("WiseTodo local diagnostics unavailable", file=sys.stderr, flush=True)
+    diagnostics.record(Event.BACKEND_STARTED)
     try:
         database = initialize_database(args.database)
     except Exception:
+        diagnostics.record(Event.DATABASE_INIT_FAILED)
+        diagnostics.stop()
         print("WiseTodo database initialization failed", file=sys.stderr, flush=True)
         raise SystemExit(1) from None
 
@@ -76,8 +85,16 @@ def main() -> None:
                 settings_service,
             )
         )
+    except Exception:
+        diagnostics.record(Event.BACKEND_FAILED)
+        print("WiseTodo backend failed", file=sys.stderr, flush=True)
+        raise SystemExit(1) from None
     finally:
-        database.dispose()
+        try:
+            database.dispose()
+        finally:
+            diagnostics.record(Event.BACKEND_STOPPED)
+            diagnostics.stop()
 
 
 if __name__ == "__main__":

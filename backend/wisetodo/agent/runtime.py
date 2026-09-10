@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import httpx
 from sqlalchemy.orm import object_session
 
+from wisetodo import diagnostics
 from wisetodo.agent.errors import AgentExecutionError, map_agent_error
 from wisetodo.agent.generation import InvalidAgentOutputError, ResultGenerator
 from wisetodo.agent.prompts import build_agent_request
@@ -96,6 +97,7 @@ class AgentRuntime:
                     )
                 )
             emit_run("run.updated", session_id, run_id)
+            diagnostics.record(diagnostics.Event(f"tool_{state}"))
 
         stage: Literal["model", "todo", "runtime"] = "runtime"
         try:

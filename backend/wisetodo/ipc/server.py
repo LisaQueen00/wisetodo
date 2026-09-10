@@ -9,6 +9,7 @@ from pydantic import TypeAdapter, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 from wisetodo.agent.errors import KNOWN_MODEL_ERRORS, map_agent_error
+from wisetodo.diagnostics import Event, record
 from wisetodo.errors import ErrorCode, WiseTodoError
 from wisetodo.ipc.events import request_id
 from wisetodo.ipc.messages import IpcCancel, IpcFailure, IpcRequest, IpcResponse
@@ -90,11 +91,13 @@ async def dispatch(
 
 
 def _write_failure(request_id: str, error: WiseTodoError) -> None:
+    record(Event.IPC_FAILED, error.code)
     response = IpcFailure(requestId=request_id, error=error)
     print(response.model_dump_json(by_alias=True, exclude_none=True), flush=True)
 
 
 def _handle_invalid_request(line: str) -> None:
+    record(Event.IPC_REJECTED)
     try:
         payload = json.loads(line)
     except json.JSONDecodeError:
@@ -187,6 +190,7 @@ async def run_stdio_server(
                 user_message="处理请求时发生错误，请重试。",
             )
         else:
+            record(Event.IPC_SUCCEEDED)
             response = IpcResponse(requestId=message.request_id, result=result)
             print(response.model_dump_json(by_alias=True), flush=True)
             return
@@ -206,6 +210,7 @@ async def run_stdio_server(
                     task.cancel()
                 continue
             if message.request_id in tasks:
+                record(Event.IPC_REJECTED)
                 # Do not emit a second terminal response for the same in-flight ID.
                 print("Ignored duplicate active IPC request ID", file=sys.stderr, flush=True)
                 continue

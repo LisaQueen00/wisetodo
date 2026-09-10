@@ -1,6 +1,5 @@
 """Atomic non-secret settings file and explicitly selected OS credential storage."""
 
-import logging
 import os
 import sys
 import tempfile
@@ -11,9 +10,8 @@ from uuid import UUID, uuid4
 from keyring.backend import KeyringBackend
 from pydantic import SecretStr
 
+from wisetodo.diagnostics import Event, record
 from wisetodo.settings.models import ConnectionSettings, ResolvedSettings
-
-logger = logging.getLogger(__name__)
 
 
 class SettingsStorageError(Exception):
@@ -158,7 +156,7 @@ class FileSettingsStore:
             self._credentials.delete(str(reference))
         except Exception:
             # Never turn an already committed save into a reported failure.
-            logger.warning("Unused model credential cleanup failed")
+            record(Event.CREDENTIAL_CLEANUP_FAILED)
 
 
 def create_settings_store(data_directory: Path) -> FileSettingsStore:
