@@ -3,10 +3,12 @@ name: join-open-source
 description: 帮助用户选择一个开源项目并组织具体贡献事项
 accepts: [text, github_url]
 tools:
-  optional: [read_github_project, read_url, search_projects]
+  optional: [inspect_github_project, list_github_tree, read_github_file, search_github_code, inspect_github_file_symbols, read_github_history, read_github_commit, read_github_discussion_context, read_github_project, read_url, search_projects]
 ---
 
 # 参与开源贡献
+
+新工具可用时，优先 inspect_github_project 固定 commit，并将其作为后续 ref；通过 list_github_tree、search_github_code、read_github_file 找相关实现与测试。搜索每页最多五个文件，不是语义引用查询。Python 符号工具不支持其他语言。历史 query 仅筛选本页提交说明；具体改动用 read_github_commit，issue/PR 普通评论用 read_github_discussion_context，不宣称已读行内评审。按 next_page/next_line 续读，截断不是不存在。新链路最多八批且需要新请求和新结果；以下四批限制仅针对旧兼容工具。证据足够就规划，不为补全历史而反复调用。
 
 只有用户明确希望参与开源贡献时采用本指导；普通文本或仓库链接不是贡献意图的证明。
 

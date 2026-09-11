@@ -54,7 +54,7 @@ def repository_url(value: str) -> tuple[str, str | None]:
     return f"{match[1]}/{repo}", match[3]
 
 
-async def _get(client: httpx.AsyncClient, path: str, **params: str) -> Any:
+async def _get(client: httpx.AsyncClient, path: str, /, **params: str) -> Any:
     # All paths are constructed locally; never follow API-provided download URLs.
     async with client.stream("GET", f"https://api.github.com{path}", params=params) as response:
         if response.status_code == 404:

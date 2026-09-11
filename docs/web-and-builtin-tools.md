@@ -1,6 +1,6 @@
 # 内置能力与网页读取（Phase 8.4 / 8.5）
 
-干净用户目录默认启用 `parse_pdf`、`read_github_project`、`search_projects`、`read_url`。缺少用户 `skills/` 时回退到随包三个 Skill；源码版读取仓库示例，冻结版读取包内 `builtin_skills/`。已有目录完整替代默认 Skill（空目录可禁用），已有 Tool 配置完整替代默认工具（空列表可禁用）。不写回、覆盖或迁移用户配置；每个新 Run 重读，旧 Run 快照不变。不启用未知 MCP 服务。
+干净用户目录默认启用 `parse_pdf`、`read_github_project`、`search_projects`、`read_url`，以及八个[开源学习原子工具](repository-toolchain.md)，共十二个。缺少用户 `skills/` 时回退到随包三个 Skill；源码版读取仓库示例，冻结版读取包内 `builtin_skills/`。已有目录完整替代默认 Skill（空目录可禁用），已有 Tool 配置完整替代默认工具（空列表可禁用）。不写回、覆盖或迁移用户配置；每个新 Run 重读，旧 Run 快照不变。不启用未知 MCP 服务。
 
 ## 网页支持范围
 

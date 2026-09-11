@@ -1,6 +1,7 @@
 """Reviewed built-in local definitions, without user data or external services."""
 
 from wisetodo.tools.config import ToolConfig
+from wisetodo.tools.repository import repository_tools
 
 
 def builtin_tools() -> tuple[ToolConfig, ...]:
@@ -30,40 +31,43 @@ def builtin_tools() -> tuple[ToolConfig, ...]:
             {"type": "string", "minLength": 1, "maxLength": 200},
         ),
     )
-    return tuple(
-        ToolConfig.model_validate(
-            {
-                "name": name,
-                "description": description
-                + (
-                    " 可选 paths 按需读取最多四个仓库相对文件/目录；ref 指定分支。"
-                    if name == "read_github_project"
-                    else ""
-                ),
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        argument: schema,
-                        **(
-                            {
-                                "paths": {
-                                    "type": "array",
-                                    "minItems": 1,
-                                    "maxItems": 4,
-                                    "items": {"type": "string", "maxLength": 300},
-                                },
-                            "ref": {"type": "string", "minLength": 1, "maxLength": 200},
-                            "offset": {"type": "integer", "minimum": 0, "maximum": 1048576},
-                            }
-                            if name == "read_github_project"
-                            else {}
-                        ),
+    return (
+        tuple(
+            ToolConfig.model_validate(
+                {
+                    "name": name,
+                    "description": description
+                    + (
+                        " 可选 paths 按需读取最多四个仓库相对文件/目录；ref 指定分支。"
+                        if name == "read_github_project"
+                        else ""
+                    ),
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            argument: schema,
+                            **(
+                                {
+                                    "paths": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "maxItems": 4,
+                                        "items": {"type": "string", "maxLength": 300},
+                                    },
+                                    "ref": {"type": "string", "minLength": 1, "maxLength": 200},
+                                    "offset": {"type": "integer", "minimum": 0, "maximum": 1048576},
+                                }
+                                if name == "read_github_project"
+                                else {}
+                            ),
+                        },
+                        "required": [argument],
+                        "additionalProperties": False,
                     },
-                    "required": [argument],
-                    "additionalProperties": False,
-                },
-                "transport": {"type": "local", "handler": name},
-            }
+                    "transport": {"type": "local", "handler": name},
+                }
+            )
+            for name, description, argument, schema in definitions
         )
-        for name, description, argument, schema in definitions
+        + repository_tools()
     )

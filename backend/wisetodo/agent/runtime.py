@@ -42,6 +42,7 @@ from wisetodo.tools.failures import tool_failure_message
 from wisetodo.tools.local_handlers import registered_handlers
 from wisetodo.tools.model_content import model_tool_results
 from wisetodo.tools.registry import ToolRegistry
+from wisetodo.tools.repository import SPECS
 from wisetodo.tools.results import execute_results
 from wisetodo.tools.source import load_tools
 from wisetodo.tools.transport import LocalHandler, ToolExecutor
@@ -202,6 +203,8 @@ class AgentRuntime:
                     generated = state["generation"]
                     result = generated.result
                     tool_round = 0
+                    seen_reads: set[str] = set()
+                    seen_read_results: set[str] = set()
                     repository_config = registry.get("read_github_project")
                     repository_properties = (
                         repository_config.input_schema.get("properties")
@@ -223,6 +226,16 @@ class AgentRuntime:
                             )
                             for call in result.calls
                         )
+                        new_reads = {
+                            json.dumps([call.tool, call.arguments], sort_keys=True)
+                            for call in result.calls
+                            if call.tool in SPECS
+                        }
+                        # Atomized repository workflows get more steps only for new requests.
+                        # Repeated requests and identical results must not keep a Run alive.
+                        if new_reads:
+                            may_continue = bool(new_reads - seen_reads) and tool_round < 8
+                            seen_reads.update(new_reads)
                         async with httpx.AsyncClient(
                             follow_redirects=False, trust_env=False
                         ) as client:
@@ -234,6 +247,14 @@ class AgentRuntime:
                                 observer=tool_event,
                             )
                         outputs = model_tool_results(outputs)
+                        if new_reads:
+                            fingerprints = {
+                                json.dumps(outputs[call.callId], sort_keys=True)
+                                for call in result.calls
+                                if call.tool in SPECS
+                            }
+                            may_continue = may_continue and bool(fingerprints - seen_read_results)
+                            seen_read_results.update(fingerprints)
                         if self._mode == "native":
                             messages.append(
                                 ModelMessage(

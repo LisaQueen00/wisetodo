@@ -9,6 +9,7 @@ from wisetodo.model.contracts import ModelResponse, ToolCall
 from wisetodo.sessions.service import SessionService
 from wisetodo.skills import SkillSource
 from wisetodo.todos import TodoService
+from wisetodo.tools.repository import SPECS
 from wisetodo.tools.source import load_tools
 
 
@@ -54,6 +55,7 @@ async def test_same_runtime_discovers_additions_changes_and_removal(tmp_path, mo
                     "parse_pdf",
                     "read_github_project",
                     "search_projects",
+                    *SPECS,
                 }
                 assert "guidance-" not in request.messages[0].content
             else:

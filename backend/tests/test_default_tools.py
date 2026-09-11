@@ -9,6 +9,7 @@ from wisetodo.sessions.service import SessionService
 from wisetodo.todos import TodoService
 from wisetodo.tools.defaults import builtin_tools
 from wisetodo.tools.local_handlers import registered_handlers
+from wisetodo.tools.repository import SPECS
 from wisetodo.tools.source import load_tools
 
 
@@ -24,6 +25,7 @@ def test_missing_optional_config_uses_detached_defaults_without_writes(tmp_path)
         "parse_pdf",
         "read_github_project",
         "search_projects",
+        *SPECS,
     }
     assert not path.exists()
     configs = builtin_tools()
@@ -53,7 +55,7 @@ def test_user_config_replaces_defaults_and_reload_keeps_old_snapshot(tmp_path):
     current = load(path, optional=True)
     assert current.names == ("read_github_project",)
     assert current.definitions()[0].description == "User override"
-    assert len(old.names) == 4
+    assert len(old.names) == 4 + len(SPECS)
     assert path.read_text() == content
 
 
@@ -91,6 +93,7 @@ async def test_runtime_exposes_defaults_then_honors_disable(tmp_path, mode):
             "parse_pdf",
             "read_github_project",
             "search_projects",
+            *SPECS,
         }
         assert not path.exists()
         path.write_text('{"tools":[]}')
