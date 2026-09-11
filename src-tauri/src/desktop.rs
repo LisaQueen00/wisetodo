@@ -153,6 +153,15 @@ pub fn clean_exit(app: &AppHandle) {
 mod tests {
     use super::*;
     #[test]
+    fn windows_transparency_preserves_base_window_options() {
+        let base: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        let mut windows: serde_json::Value = serde_json::from_str(include_str!("../tauri.windows.conf.json")).unwrap();
+        let window = windows["app"]["windows"][0].as_object_mut().unwrap();
+        assert_eq!(window.remove("transparent"), Some(serde_json::json!(true)));
+        assert_eq!(window.remove("backgroundColor"), Some(serde_json::json!([0, 0, 0, 0])));
+        assert_eq!(windows["app"]["windows"], base["app"]["windows"]);
+    }
+    #[test]
     fn sensible_screen_defaults() {
         assert_eq!(initial_size(1920.0, 1080.0), (400.0, 648.0));
         assert_eq!(initial_size(3840.0, 2160.0), (400.0, 1296.0));

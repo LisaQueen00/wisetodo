@@ -1,5 +1,6 @@
 import { TodoWorkspace } from "./todos/TodoWorkspace";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type CSSProperties } from "react";
+import { usePanelOpacity } from "./desktop/usePanelOpacity";
 import type { LoadTodos, TodoMutations } from "./todos/types";
 import { SessionPanel } from "./sessions/SessionPanel";
 import type { SessionApi } from "./sessions/types";
@@ -18,9 +19,10 @@ function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi, d
   const [chatOpen, setChatOpen] = useState(false);
   const [chatRunning, setChatRunning] = useState(false);
   const chatButton = useRef<HTMLButtonElement>(null);
+  const { opacity, changeOpacity, saveFailed } = usePanelOpacity();
   const onCommitted = useCallback(() => setTodoRevision((value) => value + 1), []);
   return (
-    <main className="flex h-dvh min-h-[520px] flex-col overflow-hidden bg-[var(--surface-window)] text-[var(--text-primary)]">
+    <main style={{ "--panel-alpha": opacity / 100 } as CSSProperties} className="app-panel flex h-dvh min-h-[520px] flex-col overflow-hidden bg-[var(--surface-window)] text-[var(--text-primary)]">
       <ErrorNotice />
         <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-white/10 p-3">
           <div>
@@ -31,11 +33,20 @@ function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi, d
             className="rounded-lg bg-white/10 px-3 py-2 text-sm" onClick={() => setChatOpen((value) => !value)}>
             {chatOpen ? "收起 Chat" : "打开 Chat"}{chatRunning && <span role="status" className="ml-2 text-xs">执行中</span>}
           </button>
-          {desktopApi && <details className="w-full text-xs text-white/65"><summary className="cursor-pointer">桌面选项</summary><DesktopControls api={desktopApi} /></details>}
+          <details className="w-full text-xs text-white/65"><summary className="cursor-pointer">桌面选项</summary>
+            {desktopApi && <DesktopControls api={desktopApi} />}
+            <label className="mt-3 block">背景不透明度：{opacity}%
+              <input aria-label="背景不透明度" className="mt-2 block w-full" type="range" min={60} max={100} step={1}
+                value={opacity} onChange={(event) => changeOpacity(Number(event.target.value))} />
+            </label>
+            <button className="mt-2 rounded bg-white/10 px-2 py-1" onClick={() => changeOpacity(100)}>恢复不透明背景</button>
+            <p className="mt-2">仅背景淡化，仍可点击操作；桌面透视效果首版支持 Windows。</p>
+            {saveFailed && <p role="alert">本次效果已应用，但未能保存，重启后可能恢复默认值。</p>}
+          </details>
         </header>
       <div className="relative min-h-0 flex-1 overflow-hidden">
       <section aria-label="Todo 工作区" inert={chatOpen} aria-hidden={chatOpen}
-        className="absolute inset-0 flex min-h-0 min-w-0 flex-col">
+        className={`absolute inset-0 flex min-h-0 min-w-0 flex-col ${chatOpen ? "invisible" : ""}`}>
         <div className="min-h-0 flex-1 overflow-y-auto p-3" tabIndex={0} aria-label="Todo 列表滚动区">
           {preview && <p className="mb-4 rounded-lg bg-white/5 p-3 text-xs text-white/60">示例数据预览 · 不会写入数据库</p>}
           {loadTodos ? <TodoWorkspace key={preview ? "preview" : "live"} loadTodos={loadTodos} mutations={mutations} refreshToken={todoRevision} /> : (
@@ -48,8 +59,8 @@ function App({ loadTodos, mutations, preview = false, sessionApi, settingsApi, d
       </section>
 
       <aside id="chat-overlay" aria-label="Chat 工作区" inert={!chatOpen} aria-hidden={!chatOpen}
-        data-open={chatOpen} className="chat-overlay absolute inset-0 flex min-h-0 min-w-0 flex-col bg-[var(--surface-window)] p-3"
-        onKeyDown={(event) => { if (event.key === "Escape" && !event.nativeEvent.isComposing) {
+        data-open={chatOpen} className="chat-overlay absolute inset-0 flex min-h-0 min-w-0 flex-col p-3"
+        onKeyDown={(event) => { if (event.key === "Escape" && !event.defaultPrevented && !event.nativeEvent.isComposing) {
           setChatOpen(false); chatButton.current?.focus();
         } }}>
         {settingsApi ? <SettingsPanel api={settingsApi} /> : <h2 className="mb-5 shrink-0 text-sm font-medium text-white/70">Chat</h2>}
