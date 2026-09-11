@@ -5,7 +5,7 @@ import binascii
 import json
 import re
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 import httpx
 from pydantic import JsonValue
@@ -102,9 +102,15 @@ def _append(result: dict[str, JsonValue], key: str, value: JsonValue) -> None:
 
 async def read_github_project(arguments: dict[str, JsonValue]) -> JsonValue:
     url = arguments.get("url")
-    if set(arguments) != {"url"} or not isinstance(url, str):
+    if not {"url"} <= set(arguments) <= {"url", "paths", "ref", "offset"} or not isinstance(
+        url, str
+    ):
         raise ToolTransportError("invalid_tool_arguments")
     name, issue = repository_url(url)
+    if "paths" in arguments:
+        return await read_repository_paths(name, arguments)
+    if "ref" in arguments or "offset" in arguments:
+        raise ToolTransportError("invalid_tool_arguments")
     prefix = f"/repos/{name}"
     result: dict[str, JsonValue] = {
         "repository": name,
@@ -203,6 +209,62 @@ async def read_github_project(arguments: dict[str, JsonValue]) -> JsonValue:
                             "type": _text(entry.get("type"), 16),
                         },
                     )
+    return result
+
+
+async def read_repository_paths(name: str, arguments: dict[str, JsonValue]) -> JsonValue:
+    paths, ref = arguments.get("paths"), arguments.get("ref")
+    offset = arguments.get("offset", 0)
+    if type(offset) is not int or not 0 <= offset <= MAX_BYTES:
+        raise ToolTransportError("invalid_tool_arguments")
+    if (
+        not isinstance(paths, list)
+        or not 1 <= len(paths) <= 4
+        or (ref is not None and (not isinstance(ref, str) or not 1 <= len(ref) <= 200))
+    ):
+        raise ToolTransportError("invalid_tool_arguments")
+    for path in paths:
+        if (
+            not isinstance(path, str)
+            or not 1 <= len(path) <= 300
+            or any(part in {"", ".", ".."} for part in path.split("/"))
+            or any(ord(c) < 32 or c in "\\?#%:" for c in path)
+        ):
+            raise ToolTransportError("invalid_tool_arguments")
+    result: dict[str, JsonValue] = {
+        "repository": name,
+        "partial": True,
+        "files": [],
+        "notice": "有限只读资料；裁剪/缺失不代表不存在，不执行代码。",
+    }
+    async with _client() as client:
+        for path in paths:
+            assert isinstance(path, str)
+            endpoint = f"/repos/{name}/contents/{quote(path, safe='/')}"
+            value = await _get(client, endpoint, **({"ref": ref} if isinstance(ref, str) else {}))
+            item: dict[str, JsonValue] = {
+                "path": path,
+                "source": f"https://api.github.com{endpoint}",
+            }
+            if isinstance(value, list):
+                item["entries"] = [
+                    {"path": _text(v.get("path"), 300), "type": _text(v.get("type"), 20)}
+                    for v in value[:25]
+                    if isinstance(v, dict)
+                ]
+                item["truncated"] = len(value) > 25
+            elif isinstance(value, dict) and value.get("type") == "file":
+                text = _document(value, MAX_BYTES)
+                if not text or "\x00" in text:
+                    item["error"] = "unsupported_or_empty_file"
+                else:
+                    item["text"] = text[offset : offset + 2400]
+                    item["offset"] = offset
+                    item["next_offset"] = offset + 2400 if len(text) > offset + 2400 else None
+                    item["truncated"] = len(text) > offset + 2400
+            else:
+                item["error"] = "path_unavailable_or_unsupported"
+            _append(result, "files", item)
     return result
 
 

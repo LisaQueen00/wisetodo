@@ -34,10 +34,31 @@ def builtin_tools() -> tuple[ToolConfig, ...]:
         ToolConfig.model_validate(
             {
                 "name": name,
-                "description": description,
+                "description": description
+                + (
+                    " 可选 paths 按需读取最多四个仓库相对文件/目录；ref 指定分支。"
+                    if name == "read_github_project"
+                    else ""
+                ),
                 "input_schema": {
                     "type": "object",
-                    "properties": {argument: schema},
+                    "properties": {
+                        argument: schema,
+                        **(
+                            {
+                                "paths": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "maxItems": 4,
+                                    "items": {"type": "string", "maxLength": 300},
+                                },
+                            "ref": {"type": "string", "minLength": 1, "maxLength": 200},
+                            "offset": {"type": "integer", "minimum": 0, "maximum": 1048576},
+                            }
+                            if name == "read_github_project"
+                            else {}
+                        ),
+                    },
                     "required": [argument],
                     "additionalProperties": False,
                 },

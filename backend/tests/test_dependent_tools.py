@@ -83,7 +83,7 @@ async def test_search_then_read_then_commit_in_one_run(tmp_path, mode, request, 
             self.requests.append(request)
             step = len(self.requests)
             if step == 3:
-                assert not request.tools
+                assert request.tools  # Repository details can now be requested before committing.
                 assert "src/cli.py" in request.messages[-1].content
                 return ModelResponse(content=json.dumps(create_output()), finish_reason="stop")
             if step == 2:

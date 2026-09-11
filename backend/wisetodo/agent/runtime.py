@@ -202,11 +202,26 @@ class AgentRuntime:
                     generated = state["generation"]
                     result = generated.result
                     tool_round = 0
+                    repository_config = registry.get("read_github_project")
+                    repository_properties = (
+                        repository_config.input_schema.get("properties")
+                        if repository_config
+                        else None
+                    )
+                    supports_paths = (
+                        isinstance(repository_properties, dict) and "paths" in repository_properties
+                    )
                     while isinstance(result, ToolCallsResult):
                         tool_round += 1
                         # Search needs a dependent read. Keep ordinary read-only flows short.
-                        may_continue = tool_round < 3 and any(
-                            call.tool == "search_projects" for call in result.calls
+                        may_continue = any(
+                            (call.tool == "search_projects" and tool_round < 3)
+                            or (
+                                call.tool == "read_github_project"
+                                and tool_round < 4
+                                and supports_paths
+                            )
+                            for call in result.calls
                         )
                         async with httpx.AsyncClient(
                             follow_redirects=False, trust_env=False
