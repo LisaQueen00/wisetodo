@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import App from "../App";
 import { SessionPanel } from "./SessionPanel";
@@ -32,7 +32,13 @@ it("refreshes the Todo list and locks chat only after committed response", async
     return { ...first, status: "completed", messages: [{ id: "reply", session_id: first.id, role: "assistant", content: "已创建：新任务", attachments: [], position: 0, created_at: first.created_at }] };
   });
   render(<App sessionApi={service} loadTodos={load} />);
+  fireEvent.click(screen.getByRole("button", { name: "打开 Chat" }));
   await openAndType();
+  const input = screen.getByLabelText("聊天输入");
+  fireEvent.click(screen.getByRole("button", { name: "收起 Chat" }));
+  fireEvent.click(screen.getByRole("button", { name: "打开 Chat" }));
+  expect(screen.getByLabelText("聊天输入")).toBe(input);
+  expect(input).toHaveValue("生成任务");
   fireEvent.click(screen.getByRole("button", { name: "发送" }));
   await screen.findByText("已创建：新任务");
   expect(await screen.findByText("共 1 个 Todo")).toBeInTheDocument();
@@ -49,6 +55,25 @@ it("sends the explicitly selected edit target and keeps clarification editable",
   fireEvent.click(screen.getByRole("button", { name: "发送" }));
   await waitFor(() => expect(service.send).toHaveBeenCalledWith(first.id, expect.any(String), "生成任务", [], [], todo.id));
   await waitFor(() => expect(screen.getByLabelText("聊天输入")).toBeEnabled());
+});
+
+it("keeps execution alive while Chat is covered and refreshes Todo after commit", async () => {
+  const service = api();
+  let finish!: (history: SessionHistory) => void;
+  vi.mocked(service.send).mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+  let committed = false;
+  render(<App sessionApi={service} loadTodos={async () => committed ? [todo] : []} />);
+  fireEvent.click(screen.getByRole("button", { name: "打开 Chat" }));
+  await openAndType();
+  fireEvent.click(screen.getByRole("button", { name: "发送" }));
+  await waitFor(() => expect(service.send).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByRole("button", { name: /收起 Chat/ }));
+  expect(screen.getByRole("button", { name: /打开 Chat/ })).toHaveTextContent("执行中");
+  await act(async () => { committed = true; finish({ ...first, status: "completed" }); });
+  expect(await screen.findByText("共 1 个 Todo")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "打开 Chat" }));
+  expect(screen.getByLabelText("聊天输入（会话已完成，只读）")).toBeDisabled();
+  expect(service.send).toHaveBeenCalledTimes(1);
 });
 
 it("recovers saved input after execution failure and retries without resending", async () => {

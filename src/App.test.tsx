@@ -11,12 +11,23 @@ import type { Todo } from "./todos/types";
 afterEach(cleanup);
 
 describe("App", () => {
-  it("renders both primary workspace areas", () => {
+  it("opens Chat over Todo and restores the same Todo region on Escape", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "WiseTodo" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Chat" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Chat" })).not.toBeInTheDocument();
     expect(screen.getByText("请通过桌面应用查看 Todo")).toBeInTheDocument();
+    const todo = screen.getByRole("region", { name: "Todo 工作区" });
+    const scroll = screen.getByLabelText("Todo 列表滚动区");
+    scroll.scrollTop = 123;
+    fireEvent.click(screen.getByRole("button", { name: "打开 Chat" }));
+    expect(screen.getByRole("heading", { name: "Chat" })).toBeInTheDocument();
+    expect(todo).toHaveAttribute("inert");
+    expect(screen.queryByRole("region", { name: "Todo 工作区" })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole("complementary", { name: "Chat 工作区" }), { key: "Escape" });
+    expect(screen.getByRole("region", { name: "Todo 工作区" })).toBe(todo);
+    expect(scroll.scrollTop).toBe(123);
+    expect(screen.getByRole("button", { name: "打开 Chat" })).toHaveFocus();
   });
 
   it("groups every todo by completion while preserving source order and content within each group", async () => {

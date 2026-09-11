@@ -23,9 +23,24 @@
 html,
 body,
 #root {
-  min-width: 720px;
+  min-width: 360px;
   min-height: 520px;
   margin: 0;
+}
+
+.chat-overlay {
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 180ms ease, visibility 180ms;
+}
+.chat-overlay[data-open="true"] {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-overlay { transition: none; }
 }
 
 button,

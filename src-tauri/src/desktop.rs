@@ -29,7 +29,7 @@ pub fn reveal(app: &AppHandle) {
 }
 
 fn initial_size(width: f64, height: f64) -> (f64, f64) {
-    ((width / 3.0).max(720.0).min(width), (height * 0.6).max(520.0).min(height))
+    (400.0_f64.min(width), (height * 0.6).max(520.0).min(height))
 }
 
 fn mark_running(path: &std::path::Path) -> std::io::Result<bool> {
@@ -49,13 +49,15 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     app.manage(DesktopState { marker, pin_file, abnormal: AtomicBool::new(abnormal), tray: AtomicBool::new(false) });
     let window = app.get_webview_window("main").ok_or("Missing main window")?;
     window.set_always_on_top(pinned)?;
-    if !app.path().app_config_dir()?.join(tauri_plugin_window_state::DEFAULT_FILENAME).exists() {
+    let layout_marker = dir.join("overlay-layout-v1.marker");
+    if !layout_marker.exists() || !app.path().app_config_dir()?.join(tauri_plugin_window_state::DEFAULT_FILENAME).exists() {
         if let Some(monitor) = window.current_monitor()? {
             let area = monitor.work_area();
             let scale = monitor.scale_factor();
             let (width, height) = initial_size(area.size.width as f64 / scale, area.size.height as f64 / scale);
             window.set_size(tauri::LogicalSize::new(width, height))?;
             window.center()?;
+            fs::write(&layout_marker, b"1")?;
         }
     }
     use tauri::{menu::{Menu, MenuItem}, tray::TrayIconBuilder};
@@ -152,9 +154,9 @@ mod tests {
     use super::*;
     #[test]
     fn sensible_screen_defaults() {
-        assert_eq!(initial_size(1920.0, 1080.0), (720.0, 648.0));
-        assert_eq!(initial_size(3840.0, 2160.0), (1280.0, 1296.0));
-        assert_eq!(initial_size(1280.0, 720.0), (720.0, 520.0));
+        assert_eq!(initial_size(1920.0, 1080.0), (400.0, 648.0));
+        assert_eq!(initial_size(3840.0, 2160.0), (400.0, 1296.0));
+        assert_eq!(initial_size(1280.0, 720.0), (400.0, 520.0));
     }
     #[test]
     fn never_restore_hidden_or_minimized_state() {

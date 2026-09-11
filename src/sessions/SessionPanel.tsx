@@ -11,7 +11,7 @@ const labels: Record<SessionStatus, string> = {
   ready: "待开始", running: "执行中", waiting_input: "等待补充", completed: "已完成", failed: "失败", cancelled: "已停止",
 };
 
-export function SessionPanel({ api, loadTodos, onCommitted }: { api: SessionApi; loadTodos?: LoadTodos; onCommitted?: () => void }) {
+export function SessionPanel({ api, loadTodos, onCommitted, visible = true, onRunningChange }: { api: SessionApi; loadTodos?: LoadTodos; onCommitted?: () => void; visible?: boolean; onRunningChange?: (running: boolean) => void }) {
   const [targets, setTargets] = useState<Todo[]>([]);
   const [targetId, setTargetId] = useState("");
   const [rows, setRows] = useState<SessionSummary[]>([]);
@@ -32,6 +32,7 @@ export function SessionPanel({ api, loadTodos, onCommitted }: { api: SessionApi;
   const canInput = !!active && active.status !== "completed" && active.status !== "running";
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeId = active?.id;
+  useEffect(() => { onRunningChange?.(mutating || active?.status === "running"); }, [mutating, active?.status, onRunningChange]);
   useEffect(() => {
     let live = true;
     let sequence = 0;
@@ -67,7 +68,7 @@ export function SessionPanel({ api, loadTodos, onCommitted }: { api: SessionApi;
     });
     setError("");
   }, [activeId]);
-  useFileDrops(api, inputRef, canInput && !busy && listReady, addFiles, setError);
+  useFileDrops(api, inputRef, visible && canInput && !busy && listReady, addFiles, setError);
   useEffect(() => {
     const requests = request;
     const ticket = ++request.current;
