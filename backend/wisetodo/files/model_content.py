@@ -20,7 +20,13 @@ def pdf_model_content(content: PdfContent) -> dict[str, JsonValue]:
         "sections": sections,
         "pages": pages,
         "partial": True,
-        "notice": "有限资料；未返回的章节或页面不代表不存在，不得编造。",
+        "next_outline_offset": content.next_outline_offset,
+        "next_page": content.next_page,
+        "next_text_offset": content.next_text_offset,
+        "outline_complete": False,
+        "outline_depth": content.outline_depth,
+        "outline_scope": "完整性仅指所选层级的 PDF 书签；空书签不表示没有印刷目录。",
+        "notice": "有限资料，不是原书截断。按指针续读；partial 不等于章节目录不完整。",
     }
     # Keep the marker in every payload, including fully fitting excerpts: extraction
     # already samples only opening pages and may have clipped text or bookmarks.
@@ -28,12 +34,23 @@ def pdf_model_content(content: PdfContent) -> dict[str, JsonValue]:
         result["title"] = None
     for section in content.sections:
         sections.append(asdict(section))
-        if len(json.dumps(result, ensure_ascii=False)) > PDF_CONTENT_CHARS:
+        if len(json.dumps(result, ensure_ascii=False)) > PDF_CONTENT_CHARS - 256:
             sections.pop()
             break
     for page in content.pages:
         pages.append(asdict(page))
-        if len(json.dumps(result, ensure_ascii=False)) > PDF_CONTENT_CHARS:
+        if len(json.dumps(result, ensure_ascii=False)) > PDF_CONTENT_CHARS - 256:
             pages.pop()
             break
+    if len(sections) < len(content.sections):
+        result["next_outline_offset"] = content.outline_offset + len(sections)
+    result["outline_complete"] = (
+        content.mode != "pages"
+        and not content.outline_truncated
+        and len(sections) == len(content.sections)
+    )
+    if len(pages) < len(content.pages):
+        missing = content.pages[len(pages)]
+        result["next_page"] = missing.page
+        result["next_text_offset"] = content.text_offset if not pages else 0
     return result

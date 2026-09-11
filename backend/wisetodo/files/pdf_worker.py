@@ -11,12 +11,14 @@ from wisetodo.files.references import FileReferenceError, FileReferences
 
 def main() -> None:
     try:
-        path = json.loads(sys.stdin.buffer.read(32769))
+        request = json.loads(sys.stdin.buffer.read(32769))
+        path = request.get("path") if isinstance(request, dict) else request
+        options = request.get("options", {}) if isinstance(request, dict) else {}
         if not isinstance(path, str):
             raise ValueError
         references = FileReferences([path])
         reference = references.descriptions()[0]["file_ref"]
-        result = pdf_model_content(extract_pdf(references, reference))
+        result = pdf_model_content(extract_pdf(references, reference, **options))
     except (PdfReadError, FileReferenceError, ValueError, OSError):
         # A failed read is usable information for a clarification, not book facts.
         result = {

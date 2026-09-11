@@ -14,7 +14,8 @@ def builtin_tools() -> tuple[ToolConfig, ...]:
         ),
         (
             "parse_pdf",
-            "读取本次附件 PDF 的目录和有限正文；仅接受附件 file_ref，不接受路径。",
+            "读取附件 PDF；支持 mode=outline/pages、目录 outline_offset/outline_depth、"
+            "页面 start_page/text_offset 续读。章级计划先用 outline_depth=0 或 1。仅限 file_ref。",
             "file_ref",
             {"type": "string"},
         ),
@@ -46,6 +47,36 @@ def builtin_tools() -> tuple[ToolConfig, ...]:
                         "type": "object",
                         "properties": {
                             argument: schema,
+                            **(
+                                {
+                                    "mode": {
+                                        "type": "string",
+                                        "enum": ["auto", "outline", "pages"],
+                                    },
+                                    "outline_offset": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 100000,
+                                    },
+                                    "outline_depth": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 16,
+                                    },
+                                    "start_page": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 1000000,
+                                    },
+                                    "text_offset": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 10000000,
+                                    },
+                                }
+                                if name == "parse_pdf"
+                                else {}
+                            ),
                             **(
                                 {
                                     "paths": {

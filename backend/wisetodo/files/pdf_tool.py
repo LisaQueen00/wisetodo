@@ -15,8 +15,27 @@ from wisetodo.tools.transport import LocalHandler, ToolTransportError
 def pdf_handler(references: FileReferences) -> LocalHandler:
     async def parse_pdf(arguments: dict[str, JsonValue]) -> JsonValue:
         reference = arguments.get("file_ref")
-        if set(arguments) != {"file_ref"} or not isinstance(reference, str):
+        options = {key: value for key, value in arguments.items() if key != "file_ref"}
+        if not isinstance(reference, str) or set(options) - {
+            "mode",
+            "outline_offset",
+            "outline_depth",
+            "start_page",
+            "text_offset",
+        }:
             raise ToolTransportError("invalid_tool_arguments")
+        mode = options.get("mode", "auto")
+        if not isinstance(mode, str) or mode not in {"auto", "outline", "pages"}:
+            raise ToolTransportError("invalid_tool_arguments")
+        for key, low, high in (
+            ("outline_offset", 0, 100000),
+            ("outline_depth", 0, 16),
+            ("start_page", 1, 1000000),
+            ("text_offset", 0, 10000000),
+        ):
+            value = options.get(key, low)
+            if type(value) is not int or not low <= value <= high:
+                raise ToolTransportError("invalid_tool_arguments")
         path = references.resolve(reference)
         if path.suffix.lower() != ".pdf":
             raise ToolTransportError("invalid_tool_arguments")
@@ -35,7 +54,9 @@ def pdf_handler(references: FileReferences) -> LocalHandler:
         try:
             async with asyncio.timeout(25):
                 assert process.stdin is not None and process.stdout is not None
-                process.stdin.write(json.dumps(str(path)).encode("utf-8"))
+                process.stdin.write(
+                    json.dumps({"path": str(path), "options": options}).encode("utf-8")
+                )
                 await process.stdin.drain()
                 process.stdin.close()
                 output = bytearray()

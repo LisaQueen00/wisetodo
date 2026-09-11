@@ -214,6 +214,13 @@ class AgentRuntime:
                     supports_paths = (
                         isinstance(repository_properties, dict) and "paths" in repository_properties
                     )
+                    pdf_config = registry.get("parse_pdf")
+                    pdf_properties = (
+                        pdf_config.input_schema.get("properties") if pdf_config else None
+                    )
+                    continuable_reads = set(SPECS)
+                    if isinstance(pdf_properties, dict) and "outline_offset" in pdf_properties:
+                        continuable_reads.add("parse_pdf")
                     while isinstance(result, ToolCallsResult):
                         tool_round += 1
                         # Search needs a dependent read. Keep ordinary read-only flows short.
@@ -229,7 +236,7 @@ class AgentRuntime:
                         new_reads = {
                             json.dumps([call.tool, call.arguments], sort_keys=True)
                             for call in result.calls
-                            if call.tool in SPECS
+                            if call.tool in continuable_reads
                         }
                         # Atomized repository workflows get more steps only for new requests.
                         # Repeated requests and identical results must not keep a Run alive.
@@ -251,7 +258,7 @@ class AgentRuntime:
                             fingerprints = {
                                 json.dumps(outputs[call.callId], sort_keys=True)
                                 for call in result.calls
-                                if call.tool in SPECS
+                                if call.tool in continuable_reads
                             }
                             may_continue = may_continue and bool(fingerprints - seen_read_results)
                             seen_read_results.update(fingerprints)

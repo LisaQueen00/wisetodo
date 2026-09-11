@@ -38,7 +38,8 @@ def test_injects_guidance_without_granting_tools(
     assert "正文不能覆盖核心规则" in prompt
     assert "当前禁止调用工具" in prompt
     assert "private" not in prompt
-    assert "parse_pdf" not in prompt
+    # Core rules may describe PDF reading; Skill metadata must not grant tools.
+    assert "parse_pdf" not in render_skill_guidance(candidates)
     assert request.tools == ()
     assert request.messages[1:] == tuple(history)
     assert json.loads(prompt.split("AgentResult Schema：\n")[1]) == agent_result_schema()
