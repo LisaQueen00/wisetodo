@@ -16,6 +16,7 @@ export function SessionPanel({ api, loadTodos, onCommitted, visible = true, onRu
   const [targetId, setTargetId] = useState("");
   const [rows, setRows] = useState<SessionSummary[]>([]);
   const [active, setActive] = useState<SessionHistory | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);
   const [mutating, setMutating] = useState(false);
@@ -81,7 +82,7 @@ export function SessionPanel({ api, loadTodos, onCommitted, visible = true, onRu
   async function open(id: string) {
     if (mutation.current) return;
     const ticket = ++request.current;
-    setActive(null);
+    setOpeningId(id);
     setNotice("");
     composing.current = false;
     setBusy(true);
@@ -90,7 +91,7 @@ export function SessionPanel({ api, loadTodos, onCommitted, visible = true, onRu
       const history = await api.get(id);
       if (ticket === request.current) { setActive(history); setTargetId(history.target_todo_id ?? ""); }
     } catch { if (ticket === request.current) setError("加载会话失败，请重新选择或刷新历史。"); }
-    finally { if (ticket === request.current) setBusy(false); }
+    finally { if (ticket === request.current) { setBusy(false); setOpeningId(null); } }
   }
   async function change(kind: "create" | "delete" | "retry" | "send", id?: string) {
     if (mutation.current) return;
@@ -170,18 +171,18 @@ export function SessionPanel({ api, loadTodos, onCommitted, visible = true, onRu
     </div>
     {error && <p role="alert" className="mb-3 text-sm text-[var(--theme-status-error)]">{error}</p>}
     {(!listReady && !error) && <p role="status">正在读取历史…</p>}
-    {busy && <p role="status">正在处理会话…</p>}
+    <p role="status" className="session-status" aria-live="polite">{busy ? "正在处理会话…" : "\u00a0"}</p>
     <ul aria-label="历史会话" className="max-h-48 shrink-0 space-y-2 overflow-y-auto">
       {rows.map((session) => <li key={session.id} className="flex items-center gap-2 rounded-lg bg-[var(--theme-chat-message-background)] p-2 text-sm">
-        <button disabled={!listReady || mutating} aria-pressed={active?.id === session.id} onClick={() => { void open(session.id); }}
+        <button disabled={!listReady || mutating} aria-pressed={(openingId ?? active?.id) === session.id} onClick={() => { void open(session.id); }}
           className="min-w-0 flex-1 text-left break-words">{session.label || "新会话"}<span className="ml-2 text-xs text-[var(--theme-text-secondary)]">{labels[session.status]}</span></button>
         <button disabled={busy || !listReady || session.status === "running"} aria-label={`删除会话 ${session.label || "新会话"}`}
           onClick={() => { void change("delete", session.id); }} className="shrink-0 text-xs text-[var(--theme-text-secondary)] disabled:opacity-30">删除</button>
       </li>)}
     </ul>
     {listReady && rows.length === 0 && <p className="text-sm text-[var(--theme-text-secondary)]">暂无历史会话</p>}
-    <div className="mt-4 min-h-0 flex-1 overflow-y-auto rounded-xl border border-[var(--theme-border-normal)] p-4 text-sm text-[var(--theme-text-secondary)]">
-      {active ? <>
+    <div aria-busy={openingId !== null} className="session-content mt-4 min-h-0 flex-1 overflow-y-auto rounded-xl border border-[var(--theme-border-normal)] p-4 text-sm text-[var(--theme-text-secondary)]">
+      {active ? <div key={active.id} className="session-enter" inert={openingId !== null}>
         <h3 className="text-[var(--theme-text-primary)]">{active.label || "新会话"}</h3>
         <p className="mt-2">状态：{labels[active.status]}</p>
         <p>已加载 {active.messages.length} 条消息、{active.tool_events.length} 条工具事件。</p>
@@ -195,7 +196,7 @@ export function SessionPanel({ api, loadTodos, onCommitted, visible = true, onRu
           : <p className="mt-3 text-xs">{api.executesMessages ? "发送后执行；成功生成一个 Todo 后，此会话只读。" : "发送仅保存消息，执行器尚未接入。"}</p>}
         <ChatMessages key={active.id} messages={active.messages} />
         <SessionStages history={active} />
-      </> : <p>新建会话，或点击历史会话加载；不会自动恢复上次对话。</p>}
+      </div> : <p>新建会话，或点击历史会话加载；不会自动恢复上次对话。</p>}
     </div>
     {notice && <p role="status" className="mt-2 text-xs text-[var(--theme-text-secondary)]">{notice}</p>}
     <form aria-label="发送消息" className="mt-4 shrink-0" onSubmit={(event) => { event.preventDefault(); void change("send", active?.id); }}>

@@ -6,6 +6,22 @@ import { SessionPanel } from "./SessionPanel";
 import type { SessionApi, SessionHistory } from "./types";
 
 afterEach(cleanup);
+it("retains old content while switching and restores it on failure", async () => {
+  const service = api();
+  render(<SessionPanel api={service} />);
+  fireEvent.click(await screen.findByRole("button", { name: "First待开始" }));
+  await screen.findByRole("heading", { name: "First" });
+  let reject!: (error: Error) => void;
+  vi.mocked(service.get).mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
+  fireEvent.click(screen.getByRole("button", { name: "Second待开始" }));
+  expect(document.querySelector(".session-enter h3")).toHaveTextContent("First");
+  expect(screen.getByRole("button", { name: "Second待开始" })).toHaveAttribute("aria-pressed", "true");
+  expect(document.querySelector(".session-content")).toHaveAttribute("aria-busy", "true");
+  await act(async () => reject(new Error("offline")));
+  expect(await screen.findByRole("alert")).toHaveTextContent("加载会话失败");
+  expect(screen.getByRole("heading", { name: "First" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "First待开始" })).toHaveAttribute("aria-pressed", "true");
+});
 const first: SessionHistory = { id: "one", label: "First", status: "ready", created_at: "2026-01-01", updated_at: "2026-01-01", messages: [], tool_events: [] };
 const second = { ...first, id: "two", label: "Second" };
 function api(): SessionApi {

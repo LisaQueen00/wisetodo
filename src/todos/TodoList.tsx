@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { TodoCard } from "./TodoCard";
 import type { Todo, TodoActions } from "./types";
+import { useListMotion } from "../lib/useListMotion";
 
 interface Sorting {
   start: (id: string) => void;
@@ -58,6 +59,7 @@ function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, 
 
 export function TodoList({ todos, actions }: { todos: readonly Todo[]; actions?: TodoActions }) {
   const root = useRef<HTMLDivElement>(null);
+  useListMotion(root, todos);
   const previous = useRef(todos);
   const reveal = useRef<{ start?: ReturnType<typeof setTimeout>; expiry?: ReturnType<typeof setTimeout>; card?: HTMLElement }>({});
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -146,7 +148,7 @@ export function TodoList({ todos, actions }: { todos: readonly Todo[]; actions?:
     <div ref={root} className="space-y-7">
       {actions && <p className="text-xs text-[var(--theme-text-muted)]">拖动“排序”到同状态、同优先级的任务上，或使用上移 / 下移。</p>}
       {dragging && <p role="status">松开后移动到目标位置；不能跨完成状态或优先级。</p>}
-      {saving && <p role="status">正在保存排序…</p>}
+      {actions && <p role="status" className="sort-status" aria-live="polite">{saving ? "正在保存排序…" : "\u00a0"}</p>}
       {error && <p role="alert">排序保存失败，列表未更改，请重试。</p>}
       <TodoSection title="未完成" todos={incomplete} expandedIds={expandedIds} onToggle={toggleTodo}
         actions={actions} editingId={editingId} onEdit={setEditingId} sorting={sorting} />

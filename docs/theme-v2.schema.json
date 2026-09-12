@@ -928,7 +928,7 @@
             }
           },
           "required": [],
-          "description": "样式映射：#model-settings-form；缺省继承现有样式"
+          "description": "样式映射：#model-settings-form, #theme-editor；缺省继承现有样式"
         },
         "label": {
           "type": "object",

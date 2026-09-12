@@ -18,7 +18,7 @@ export const componentSelectors = {
   sessionRow: '[aria-label="历史会话"] > li', sessionButton: '[aria-label="历史会话"] > li > button:first-child',
   composer: 'form[aria-label="发送消息"]', chatInput: 'form[aria-label="发送消息"] textarea',
   stage: "[data-stage]", toolEvent: '[data-stage="tool"]',
-  modelSettings: "#model-settings-form", label: "label", helpText: "small",
+  modelSettings: "#model-settings-form, #theme-editor", label: "label", helpText: "small",
   button: "button", primaryButton: 'button[type="submit"], form[aria-label="发送消息"] > button',
   input: 'input:not([type="checkbox"]):not([type="range"]):not([type="color"]), textarea',
   placeholder: "input::placeholder, textarea::placeholder",
@@ -117,10 +117,10 @@ export function componentCss(palette: Record<string, string>, components: Compon
     const selectors = componentSelectors[name as ComponentName].split(", ").map(s => {
       const pseudo = s.indexOf("::");
       const base = pseudo < 0 ? s : s.slice(0, pseudo);
-      return `:root ${base.startsWith(".app-panel") ? "" : ".app-panel "}${base}:not(#theme-editor, #theme-editor *, .theme-launcher)${suffix[state]}${pseudo < 0 ? "" : s.slice(pseudo)}`;
+      return `:root ${base.startsWith(".app-panel") ? "" : ".app-panel "}${base}:not(#theme-recovery)${suffix[state]}${pseudo < 0 ? "" : s.slice(pseudo)}`;
     });
     // Global typography/text explicitly reaches utility-styled descendants; component rules follow it.
-    if (name === "global" && state === "default") selectors.push(":root .app-panel *:not(#theme-editor, #theme-editor *, .theme-launcher)");
+    if (name === "global" && state === "default") selectors.push(":root .app-panel *:not(#theme-recovery)");
     return `${selectors.join(",")}{${rules.join(";")}}`;
   })).join("\n");
 }

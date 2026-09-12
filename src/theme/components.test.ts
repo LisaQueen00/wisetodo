@@ -10,7 +10,7 @@ it("migrates v1 and supports gradients, palette references and typography", () =
   expect(css).toContain("var(--surface-alpha, 0.625)");
   expect(css).toContain("#12345680");
   expect(css).toContain("font-weight:700!important"); expect(css).toContain("font-style:italic!important");
-  expect(css).toContain("#theme-editor *");
+  expect(css).toContain(":not(#theme-recovery)");
 });
 it("fades decorative radial backgrounds in every state without fading text or controls", () => {
   const t = theme({ chatPanel: { default: { background: { type: "radial", stops: [{ color: "#ffffff", position: 0 }, { color: "#aabbcc80", position: 100 }] }, text: "#123456" }, hover: { background: "#ffffff" } }, dropdownMenu: { default: { background: "#ffffff" } }, modelSettings: { default: { background: "#ffffff" } } });

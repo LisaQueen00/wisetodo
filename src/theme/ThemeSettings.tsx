@@ -50,7 +50,8 @@ export function ThemeSettings({ controller }: { controller: ReturnType<typeof us
     <dialog id="theme-editor" ref={dialog} aria-labelledby="theme-heading" className="theme-dialog" onCancel={(event) => { event.preventDefault(); close(); }}>
       {open && <>
         <h2 id="theme-heading">主题设置</h2>
-        <p>修改立即预览，保存后留存；取消还原。设置窗口使用固定配色，避免调色后无法恢复。</p>
+        <p>修改立即预览，保存后留存；取消还原。配色难以辨认时可使用下方安全恢复入口。</p>
+        <button id="theme-recovery" type="button" onClick={() => edit(structuredClone(defaultTheme))}>安全恢复默认配色</button>
         {draft.colors.text.primary.slice(0, 7).toLowerCase() === draft.colors.window.background.toLowerCase() && <p role="status">正文与窗口底色相同，可能无法阅读；建议调整后再保存。</p>}
         <label>已保存主题<select aria-label="已保存主题" value="" onChange={(event) => {
           const chosen = event.target.value === "default" ? defaultTheme : controller.themes[Number(event.target.value)];

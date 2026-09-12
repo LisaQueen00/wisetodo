@@ -1,11 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import type { Message } from "./types";
 
 const roles = { user: "你", assistant: "助手", system: "系统" };
 
 export function ChatMessages({ messages }: { messages: readonly Message[] }) {
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => { end.current?.scrollIntoView?.({ block: "nearest" }); }, [messages.length]);
+  useLayoutEffect(() => {
+    const scroller = end.current?.closest<HTMLElement>(".session-content");
+    if (scroller) scroller.scrollTop = scroller.scrollHeight;
+  }, [messages.length]);
   return <div className="mt-4">
     {messages.length === 0 ? <p className="text-[var(--theme-text-muted)]">还没有消息，从下面输入开始。</p>
       : <ol aria-label="聊天消息" className="space-y-3">
