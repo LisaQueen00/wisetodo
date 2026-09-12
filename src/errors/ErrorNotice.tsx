@@ -12,9 +12,9 @@ export function ErrorNotice() {
   if (!error) return null;
   const cancelled = error.code === "RUN_CANCELLED";
   return <section role={cancelled ? "status" : "alert"} aria-label="最近一次操作提示"
-    className="fixed bottom-4 left-4 z-50 max-w-md rounded-xl border border-white/20 bg-[var(--surface-window)] p-4 text-sm shadow-xl">
+    className="fixed bottom-4 left-4 z-50 max-w-md rounded-xl border border-[var(--theme-border-normal)] bg-[var(--surface-window)] p-4 text-sm shadow-xl">
     <p>{errorMessages[error.code]}</p>
-    <p className="mt-1 text-xs text-white/50">{error.code}</p>
+    <p className="mt-1 text-xs text-[var(--theme-text-secondary)]">{error.code}</p>
     {error.retryable && !cancelled && <p className="mt-1 text-xs">可在原操作处手动重试；不会自动调用模型。</p>}
     <button className="mt-2 underline" onClick={() => setError(undefined)}>关闭提示</button>
   </section>;

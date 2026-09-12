@@ -54,7 +54,8 @@ describe("model settings panel", () => {
     service.test = vi.fn().mockResolvedValue("ok");
     render(<SettingsPanel api={service} />);
     await open();
-    fireEvent.change(screen.getByLabelText(field), { target: { value: field === "API Key 操作" ? "clear" : "changed" } });
+    if (field === "API Key 操作") { fireEvent.click(screen.getByRole("combobox", { name: field })); fireEvent.click(screen.getByRole("option", { name: "清除密钥，不使用鉴权" })); }
+    else fireEvent.change(screen.getByLabelText(field), { target: { value: "changed" } });
     const button = screen.getByRole("button", { name: "测试连接" }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
     expect(screen.getByText(/请先保存当前设置/)).toBeTruthy();
@@ -130,7 +131,8 @@ describe("model settings panel", () => {
     await open();
     expect((screen.getByLabelText("模型名") as HTMLInputElement).value).toBe("local");
     fireEvent.change(screen.getByLabelText("模型名"), { target: { value: "draft" } });
-    fireEvent.change(screen.getByLabelText("API Key 操作"), { target: { value: "replace" } });
+    fireEvent.click(screen.getByRole("combobox", { name: "API Key 操作" }));
+    fireEvent.click(screen.getByRole("option", { name: "填写／替换密钥" }));
     fireEvent.change(screen.getByLabelText("新 API Key"), { target: { value: "private-key" } });
     expect((screen.getByLabelText("新 API Key") as HTMLInputElement).type).toBe("password");
     fireEvent.click(screen.getByText("取消"));
@@ -147,7 +149,8 @@ describe("model settings panel", () => {
     fireEvent.click(screen.getByText("保存设置"));
     await screen.findByText(/更换地址时/);
     expect(service.save).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText("API Key 操作"), { target: { value: "clear" } });
+    fireEvent.click(screen.getByRole("combobox", { name: "API Key 操作" }));
+    fireEvent.click(screen.getByRole("option", { name: "清除密钥，不使用鉴权" }));
     fireEvent.click(screen.getByText("保存设置"));
     await screen.findByText(/设置已保存/);
     expect(service.save).toHaveBeenCalledWith({ base_url: "https://example.com/v1", model: "local", key_action: "clear" });
@@ -157,7 +160,8 @@ describe("model settings panel", () => {
     vi.mocked(service.save).mockRejectedValue(new Error("private-key"));
     render(<SettingsPanel api={service} />);
     await open();
-    fireEvent.change(screen.getByLabelText("API Key 操作"), { target: { value: "replace" } });
+    fireEvent.click(screen.getByRole("combobox", { name: "API Key 操作" }));
+    fireEvent.click(screen.getByRole("option", { name: "填写／替换密钥" }));
     fireEvent.change(screen.getByLabelText("新 API Key"), { target: { value: "private-key" } });
     fireEvent.click(screen.getByText("保存设置"));
     await screen.findByText(/保存未确认/);

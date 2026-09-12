@@ -32,18 +32,18 @@ export function UrlAttachments({ urls, disabled, onChange }: {
       <input aria-label="URL 附件" placeholder="https://…" type="text" value={input} disabled={disabled}
         onChange={(event) => { setInput(event.target.value); setError(""); }}
         onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); if (!event.nativeEvent.isComposing && event.keyCode !== 229) add(); } }}
-        className="min-w-0 flex-1 rounded-lg bg-white/5 p-2 text-sm" />
+        className="min-w-0 flex-1 rounded-lg bg-[var(--theme-chat-message-background)] p-2 text-sm" />
       <button type="button" disabled={disabled || !input.trim()} onClick={add}
         className="shrink-0 text-xs disabled:opacity-30">添加链接</button>
     </div>
-    {error && <p role="alert" className="text-xs text-red-300">{error}</p>}
+    {error && <p role="alert" className="text-xs text-[var(--theme-status-error)]">{error}</p>}
     {urls.length > 0 && <ul aria-label="待发送链接" className="max-h-32 space-y-1 overflow-y-auto">
-      {urls.map((url) => <li key={url} className="flex items-start gap-2 rounded-lg bg-white/5 p-2 text-xs">
+      {urls.map((url) => <li key={url} className="flex items-start gap-2 rounded-lg bg-[var(--theme-chat-message-background)] p-2 text-xs">
         <span className="min-w-0 flex-1 break-all">{url}</span>
         <button type="button" aria-label={`移除链接 ${url}`} disabled={disabled}
           onClick={() => onChange(urls.filter((value) => value !== url))} className="shrink-0 disabled:opacity-30">移除</button>
       </li>)}
     </ul>}
-    <p className="text-xs text-white/40">只保存链接，不会自动访问网页。</p>
+    <p className="text-xs text-[var(--theme-text-muted)]">只保存链接，不会自动访问网页。</p>
   </div>;
 }

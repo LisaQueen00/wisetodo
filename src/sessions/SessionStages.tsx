@@ -16,24 +16,24 @@ export function SessionStages({ history }: { history: SessionHistory }) {
   const current = phase[history.status];
   const stages = toolStages(history);
   const Icon = current.kind === "error" ? CircleAlert : current.kind === "result" ? CheckCircle2 : Circle;
-  return <section aria-label="执行阶段" className="mt-4 space-y-3 border-t border-white/10 pt-4">
-    <h4 className="text-xs text-white/50">执行阶段 · 历史快照</h4>
-    <div data-stage={current.kind} className={`rounded-lg border p-3 ${current.kind === "error" ? "border-red-300/20 text-red-200" : current.kind === "result" ? "border-emerald-300/20 text-emerald-200" : "border-white/10 text-white/70"}`}>
+  return <section aria-label="执行阶段" className="mt-4 space-y-3 border-t border-[var(--theme-border-normal)] pt-4">
+    <h4 className="text-xs text-[var(--theme-text-secondary)]">执行阶段 · 历史快照</h4>
+    <div data-stage={current.kind} className={`rounded-lg border p-3 ${current.kind === "error" ? "border-[var(--theme-status-error)] text-[var(--theme-status-error)]" : current.kind === "result" ? "border-[var(--theme-status-success)] text-[var(--theme-status-success)]" : "border-[var(--theme-border-normal)] text-[var(--theme-text-secondary)]"}`}>
       <p className="flex items-center gap-2"><Icon aria-hidden="true" className="size-4 shrink-0" />{current.title}</p>
-      <p className="mt-1 text-xs text-white/60">{current.detail}</p>
+      <p className="mt-1 text-xs text-[var(--theme-text-secondary)]">{current.detail}</p>
     </div>
     {stages.length > 0 && <ol aria-label="工具阶段" className="space-y-2">
-      {stages.map((stage) => <li key={stage.key} data-stage="tool" className="rounded-lg bg-white/5 p-3">
+      {stages.map((stage) => <li key={stage.key} data-stage="tool" className="rounded-lg bg-[var(--theme-chat-message-background)] p-3">
         <div className="flex items-start gap-2">
           <Wrench aria-hidden="true" className="mt-1 size-3.5 shrink-0" />
           <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{stage.tool}</span>
-          <span className={`shrink-0 text-xs ${stage.state === "failed" ? "text-red-200" : "text-white/60"}`}>{toolLabels[stage.state]}</span>
+          <span className={`shrink-0 text-xs ${stage.state === "failed" ? "text-[var(--theme-status-error)]" : "text-[var(--theme-text-secondary)]"}`}>{toolLabels[stage.state]}</span>
         </div>
-        <p className="mt-1 text-xs text-white/45">执行记录 {stage.run}</p>
+        <p className="mt-1 text-xs text-[var(--theme-text-muted)]">执行记录 {stage.run}</p>
         {stage.summary && <p className="mt-2 whitespace-pre-wrap break-words text-xs [overflow-wrap:anywhere]">{stage.summary}</p>}
-        {stage.state === "failed" && !stage.summary && <p className="mt-2 text-xs text-red-200">工具执行失败，未记录可展示的错误说明。</p>}
+        {stage.state === "failed" && !stage.summary && <p className="mt-2 text-xs text-[var(--theme-status-error)]">工具执行失败，未记录可展示的错误说明。</p>}
       </li>)}
     </ol>}
-    <p className="text-xs text-white/45">重新点击历史会话可刷新记录；工具完成不等于 Todo 已提交。</p>
+    <p className="text-xs text-[var(--theme-text-muted)]">重新点击历史会话可刷新记录；工具完成不等于 Todo 已提交。</p>
   </section>;
 }

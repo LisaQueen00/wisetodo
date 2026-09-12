@@ -50,8 +50,8 @@ it("sends the explicitly selected edit target and keeps clarification editable",
   vi.mocked(service.send).mockResolvedValue({ ...first, status: "waiting_input" });
   render(<SessionPanel api={service} loadTodos={async () => [todo]} />);
   await openAndType();
-  await screen.findByRole("option", { name: "新任务" });
-  fireEvent.change(screen.getByLabelText("编辑目标"), { target: { value: todo.id } });
+  fireEvent.click(screen.getByRole("combobox", { name: "编辑目标" }));
+  fireEvent.click(await screen.findByRole("option", { name: "新任务" }));
   fireEvent.click(screen.getByRole("button", { name: "发送" }));
   await waitFor(() => expect(service.send).toHaveBeenCalledWith(first.id, expect.any(String), "生成任务", [], [], todo.id));
   await waitFor(() => expect(screen.getByLabelText("聊天输入")).toBeEnabled());

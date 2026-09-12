@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { SettingsApi, SettingsUpdate, SettingsView } from "./desktop";
 import { connectionMessages } from "./desktop";
 
-const inputClass = "mt-1 w-full rounded-lg border border-white/15 bg-black/20 p-2 text-sm disabled:opacity-50";
+const inputClass = "mt-1 w-full rounded-lg border border-[var(--theme-border-normal)] bg-black/20 p-2 text-sm disabled:opacity-50";
 
 export function SettingsPanel({ api }: { api: SettingsApi }) {
   const [saved, setSaved] = useState<SettingsView | null>(null);
@@ -91,49 +91,50 @@ export function SettingsPanel({ api }: { api: SettingsApi }) {
 
   return <section aria-label="模型连接设置" className="mb-3 shrink-0 text-xs">
     <div className="flex items-center justify-between gap-2">
-      <h2 className="text-sm font-medium text-white/70">Chat</h2>
+      <h2 className="text-sm font-medium text-[var(--theme-text-secondary)]">Chat</h2>
       <button ref={trigger} type="button" aria-expanded={open} aria-controls="model-settings-form"
-        disabled={busy || !ready} className="rounded-lg border border-white/15 px-3 py-1.5 disabled:opacity-40"
+        disabled={busy || !ready} className="rounded-lg border border-[var(--theme-border-normal)] px-3 py-1.5 disabled:opacity-40"
         onClick={() => {
           if (open) { close(); return; }
           setBaseUrl(saved?.base_url ?? ""); setModel(saved?.model ?? "");
           setKey(""); setAction("keep"); setError(""); setNotice(""); setOpen(true);
         }}>Settings · 模型设置</button>
     </div>
-    {!ready && !error && <p role="status" className="mt-2 text-white/50">读取模型设置…</p>}
-    {ready && !saved && !open && <p className="mt-2 text-white/60">尚未配置模型，请打开 Settings；不影响手动管理 Todo 和查看历史。</p>}
-    {ready && !open && <button type="button" disabled={busy} className="mt-2 text-white/50 underline" onClick={() => {
+    {!ready && !error && <p role="status" className="mt-2 text-[var(--theme-text-secondary)]">读取模型设置…</p>}
+    {ready && !saved && !open && <p className="mt-2 text-[var(--theme-text-secondary)]">尚未配置模型，请打开 Settings；不影响手动管理 Todo 和查看历史。</p>}
+    {ready && !open && <button type="button" disabled={busy} className="mt-2 text-[var(--theme-text-secondary)] underline" onClick={() => {
       setReady(false); setNotice(""); setError(""); setAttempt((value) => value + 1);
     }}>重新读取设置</button>}
-    {error && <p role="alert" className="mt-2 text-rose-300">{error}</p>}
+    {error && <p role="alert" className="mt-2 text-[var(--theme-status-error)]">{error}</p>}
     {!ready && error && <button type="button" className="mt-2 underline" onClick={() => {
       setError(""); setAttempt((value) => value + 1);
     }}>重试读取设置</button>}
-    {notice && <p role="status" className="mt-2 text-emerald-200">{notice}</p>}
-    {open && <form id="model-settings-form" aria-label="编辑模型连接" className="mt-3 max-h-[45vh] overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-3"
+    {notice && <p role="status" className="mt-2 text-[var(--theme-status-success)]">{notice}</p>}
+    {open && <form id="model-settings-form" aria-label="编辑模型连接" className="mt-3 max-h-[45vh] overflow-y-auto rounded-xl border border-[var(--theme-border-normal)] bg-[var(--theme-chat-message-background)] p-3"
       onSubmit={(event) => { event.preventDefault(); void save(); }}
       onKeyDown={(event) => { if (event.key === "Escape" && !event.nativeEvent.isComposing) { event.preventDefault(); close(); } }}>
       <fieldset disabled={busy} className="space-y-3">
         <label className="block">Base URL<input autoFocus className={inputClass} value={baseUrl} onChange={(event) => { setBaseUrl(event.target.value); setNotice(""); setError(""); }} placeholder="http://localhost:8000/v1" autoComplete="off" spellCheck={false} /></label>
         <label className="block">模型名<input className={inputClass} value={model} onChange={(event) => { setModel(event.target.value); setNotice(""); setError(""); }} autoComplete="off" spellCheck={false} /></label>
-        <label className="block">API Key 操作<select className={inputClass} value={action} onChange={(event) => { setAction(event.target.value as typeof action); setKey(""); setNotice(""); setError(""); }}>
+        <label className="block">API Key 操作<ThemedSelect aria-label="API Key 操作" className={inputClass} value={action} onChange={(event) => { setAction(event.target.value as typeof action); setKey(""); setNotice(""); setError(""); }}>
           <option value="keep">{saved?.has_api_key ? "保留已保存的密钥" : "不使用密钥（本地服务）"}</option>
           <option value="replace">填写／替换密钥</option>
           <option value="clear">清除密钥，不使用鉴权</option>
-        </select></label>
+        </ThemedSelect></label>
         {action === "replace" && <label className="block">新 API Key<input type="password" className={inputClass} value={key} onChange={(event) => setKey(event.target.value)} autoComplete="new-password" spellCheck={false} /></label>}
-        <p className="text-white/50">全局连接设置，与会话无关。密钥保存到系统凭据库，不会显示原值。保存不发起模型请求。</p>
-        {api.test && <div className="rounded-lg border border-white/10 p-2">
-          <p className="text-white/50">仅测试已保存配置，发送一次“Reply OK.”，不发送聊天或附件，不自动重试；可能产生少量费用。</p>
-          {unsaved && <p className="mt-1 text-amber-200">请先保存当前设置，再测试连接。</p>}
-          <button type="button" disabled={busy || unsaved} className="mt-2 rounded-lg border border-white/15 px-3 py-2 disabled:opacity-40"
+        <p className="text-[var(--theme-text-secondary)]">全局连接设置，与会话无关。密钥保存到系统凭据库，不会显示原值。保存不发起模型请求。</p>
+        {api.test && <div className="rounded-lg border border-[var(--theme-border-normal)] p-2">
+          <p className="text-[var(--theme-text-secondary)]">仅测试已保存配置，发送一次“Reply OK.”，不发送聊天或附件，不自动重试；可能产生少量费用。</p>
+          {unsaved && <p className="mt-1 text-[var(--theme-status-warning)]">请先保存当前设置，再测试连接。</p>}
+          <button type="button" disabled={busy || unsaved} className="mt-2 rounded-lg border border-[var(--theme-border-normal)] px-3 py-2 disabled:opacity-40"
             onClick={() => { void testConnection(); }}>{testing ? "测试中…" : "测试连接"}</button>
         </div>}
         <div className="flex gap-3">
-          <button type="submit" className="rounded-lg bg-purple-400/20 px-3 py-2">{busy && !testing ? "保存中…" : "保存设置"}</button>
-          <button type="button" className="rounded-lg border border-white/15 px-3 py-2" onClick={close}>取消</button>
+          <button type="submit" className="rounded-lg bg-[var(--theme-button-primary-background)] px-3 py-2">{busy && !testing ? "保存中…" : "保存设置"}</button>
+          <button type="button" className="rounded-lg border border-[var(--theme-border-normal)] px-3 py-2" onClick={close}>取消</button>
         </div>
       </fieldset>
     </form>}
   </section>;
 }
+import { ThemedSelect } from "../theme/ThemedSelect";

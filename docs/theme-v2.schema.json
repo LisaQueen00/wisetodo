@@ -1,0 +1,1520 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WiseTodo Theme v2",
+  "description": "组件颜色、渐变与文字样式；64 KiB 上限，引用与渐变排序由应用二次校验。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "font": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "sizePx": {
+          "type": "integer",
+          "minimum": 12,
+          "maximum": 20
+        }
+      },
+      "required": []
+    },
+    "colors": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "primary": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "secondary": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "muted": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        },
+        "window": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "header": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        },
+        "todo": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "border": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "priorityHigh": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "priorityNormal": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "completedText": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "completedBackground": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        },
+        "chat": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "messageBackground": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        },
+        "border": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "normal": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        },
+        "button": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "text": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "hoverBackground": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "primaryBackground": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "primaryText": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "disabledText": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "text": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "placeholder": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "border": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        },
+        "dropdown": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "text": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "itemHoverBackground": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "itemSelectedBackground": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "itemSelectedText": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        },
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "error": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "success": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "warning": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "focus": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "highlight": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            "progressTrack": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            }
+          },
+          "required": []
+        }
+      },
+      "required": []
+    },
+    "palette": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "global": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_text_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.app-panel；缺省继承现有样式"
+        },
+        "window": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.app-panel；缺省继承现有样式"
+        },
+        "header": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.app-panel > header；缺省继承现有样式"
+        },
+        "appTitle": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.app-panel > header h1；缺省继承现有样式"
+        },
+        "subtitle": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.app-panel > header p；缺省继承现有样式"
+        },
+        "todoList": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[aria-label=\"Todo 列表滚动区\"]；缺省继承现有样式"
+        },
+        "todoCard": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "completed": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-card；缺省继承现有样式"
+        },
+        "todoTitle": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-title；缺省继承现有样式"
+        },
+        "todoTitleButton": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-card h3 button；缺省继承现有样式"
+        },
+        "completedTitle": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-card[data-completed=\"true\"] .todo-title；缺省继承现有样式"
+        },
+        "todoItem": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "completed": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-card ol > li；缺省继承现有样式"
+        },
+        "todoItemText": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "completed": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-card ol > li > div > span；缺省继承现有样式"
+        },
+        "todoNumber": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_text_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-card ol > li::marker；缺省继承现有样式"
+        },
+        "priority": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-priority；缺省继承现有样式"
+        },
+        "priorityHigh": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-card[data-priority=\"1\"] .todo-priority；缺省继承现有样式"
+        },
+        "priorityNormal": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.todo-card[data-priority=\"0\"] .todo-priority；缺省继承现有样式"
+        },
+        "progressTrack": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background"
+            }
+          },
+          "required": [],
+          "description": "样式映射：progress::-webkit-progress-bar；缺省继承现有样式"
+        },
+        "progressFill": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background"
+            }
+          },
+          "required": [],
+          "description": "样式映射：progress::-webkit-progress-value；缺省继承现有样式"
+        },
+        "checkbox": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_accent"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_accent"
+            },
+            "active": {
+              "$ref": "#/$defs/style_accent"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_accent"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_accent"
+            },
+            "selected": {
+              "$ref": "#/$defs/style_accent"
+            }
+          },
+          "required": [],
+          "description": "样式映射：input[type=\"checkbox\"]；缺省继承现有样式"
+        },
+        "slider": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_accent"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_accent"
+            },
+            "active": {
+              "$ref": "#/$defs/style_accent"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_accent"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_accent"
+            }
+          },
+          "required": [],
+          "description": "样式映射：input[type=\"range\"]；缺省继承现有样式"
+        },
+        "chatPanel": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.chat-overlay；缺省继承现有样式"
+        },
+        "userMessage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[data-message-role=\"user\"]；缺省继承现有样式"
+        },
+        "assistantMessage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[data-message-role=\"assistant\"]；缺省继承现有样式"
+        },
+        "systemMessage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[data-message-role=\"system\"]；缺省继承现有样式"
+        },
+        "messageRole": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[data-message-role] > p:first-child；缺省继承现有样式"
+        },
+        "messageText": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[data-message-role] > p:nth-child(2)；缺省继承现有样式"
+        },
+        "attachment": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[aria-label=\"消息附件\"] li, [aria-label=\"待发送文件\"] li；缺省继承现有样式"
+        },
+        "sessionRow": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[aria-label=\"历史会话\"] > li；缺省继承现有样式"
+        },
+        "sessionButton": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "selected": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[aria-label=\"历史会话\"] > li > button:first-child；缺省继承现有样式"
+        },
+        "composer": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：form[aria-label=\"发送消息\"]；缺省继承现有样式"
+        },
+        "chatInput": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：form[aria-label=\"发送消息\"] textarea；缺省继承现有样式"
+        },
+        "stage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[data-stage]；缺省继承现有样式"
+        },
+        "toolEvent": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[data-stage=\"tool\"]；缺省继承现有样式"
+        },
+        "modelSettings": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：#model-settings-form；缺省继承现有样式"
+        },
+        "label": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：label；缺省继承现有样式"
+        },
+        "helpText": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：small；缺省继承现有样式"
+        },
+        "button": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：button；缺省继承现有样式"
+        },
+        "primaryButton": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：button[type=\"submit\"], form[aria-label=\"发送消息\"] > button；缺省继承现有样式"
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：input:not([type=\"checkbox\"]):not([type=\"range\"]):not([type=\"color\"]), textarea；缺省继承现有样式"
+        },
+        "placeholder": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_text_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：input::placeholder, textarea::placeholder；缺省继承现有样式"
+        },
+        "dropdown": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.themed-select > button；缺省继承现有样式"
+        },
+        "dropdownMenu": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.themed-select [role=\"listbox\"]；缺省继承现有样式"
+        },
+        "dropdownOption": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "disabled": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "selected": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.themed-select [role=\"option\"]；缺省继承现有样式"
+        },
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[role=\"alert\"], [data-stage=\"error\"]；缺省继承现有样式"
+        },
+        "notice": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "hover": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "active": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            },
+            "focus": {
+              "$ref": "#/$defs/style_background_text_border_shadow_typography"
+            }
+          },
+          "required": [],
+          "description": "样式映射：[role=\"status\"]；缺省继承现有样式"
+        },
+        "scrollbarThumb": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.app-panel *::-webkit-scrollbar-thumb；缺省继承现有样式"
+        },
+        "scrollbarTrack": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/style_background"
+            }
+          },
+          "required": [],
+          "description": "样式映射：.app-panel *::-webkit-scrollbar-track；缺省继承现有样式"
+        }
+      },
+      "required": []
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "name"
+  ],
+  "$defs": {
+    "background": {
+      "oneOf": [
+        {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref": {
+                  "type": "string",
+                  "description": "引用 palette 中已定义的名称"
+                }
+              },
+              "required": [
+                "ref"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "linear"
+            },
+            "angle": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 360
+            },
+            "stops": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 12,
+              "description": "按 position 升序；运行时检查排序与引用",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "color": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "string",
+                            "description": "引用 palette 中已定义的名称"
+                          }
+                        },
+                        "required": [
+                          "ref"
+                        ]
+                      }
+                    ]
+                  },
+                  "position": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                },
+                "required": [
+                  "color",
+                  "position"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type",
+            "stops"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "radial"
+            },
+            "stops": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 12,
+              "description": "按 position 升序；运行时检查排序与引用",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "color": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "string",
+                            "description": "引用 palette 中已定义的名称"
+                          }
+                        },
+                        "required": [
+                          "ref"
+                        ]
+                      }
+                    ]
+                  },
+                  "position": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                },
+                "required": [
+                  "color",
+                  "position"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type",
+            "stops"
+          ]
+        }
+      ]
+    },
+    "text": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "引用 palette 中已定义的名称"
+            }
+          },
+          "required": [
+            "ref"
+          ]
+        }
+      ]
+    },
+    "border": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "引用 palette 中已定义的名称"
+            }
+          },
+          "required": [
+            "ref"
+          ]
+        }
+      ]
+    },
+    "shadow": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "引用 palette 中已定义的名称"
+            }
+          },
+          "required": [
+            "ref"
+          ]
+        }
+      ],
+      "description": "阴影颜色；几何固定为 0 4px 16px"
+    },
+    "accent": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "引用 palette 中已定义的名称"
+            }
+          },
+          "required": [
+            "ref"
+          ]
+        }
+      ]
+    },
+    "typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fontFamily": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "system 或本机已安装字体；不支持 CSS/URL"
+        },
+        "fontSize": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 48
+        },
+        "fontWeight": {
+          "type": "number",
+          "minimum": 100,
+          "maximum": 900
+        },
+        "fontStyle": {
+          "enum": [
+            "normal",
+            "italic"
+          ]
+        },
+        "lineHeight": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 3
+        },
+        "letterSpacing": {
+          "type": "number",
+          "minimum": -2,
+          "maximum": 10
+        },
+        "textDecoration": {
+          "enum": [
+            "none",
+            "underline",
+            "line-through"
+          ]
+        }
+      },
+      "required": []
+    },
+    "style_text_typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "typography": {
+          "$ref": "#/$defs/typography"
+        }
+      },
+      "required": []
+    },
+    "style_background_text_border_shadow_typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "background": {
+          "$ref": "#/$defs/background"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "border": {
+          "$ref": "#/$defs/border"
+        },
+        "shadow": {
+          "$ref": "#/$defs/shadow"
+        },
+        "typography": {
+          "$ref": "#/$defs/typography"
+        }
+      },
+      "required": []
+    },
+    "style_background": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "background": {
+          "$ref": "#/$defs/background"
+        }
+      },
+      "required": []
+    },
+    "style_accent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accent": {
+          "$ref": "#/$defs/accent"
+        }
+      },
+      "required": []
+    }
+  }
+}

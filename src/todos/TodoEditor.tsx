@@ -3,7 +3,7 @@ import { DEFAULT_SAVE_DELAY_MS, DebouncedSave } from "../lib/debouncedSave";
 import type { Todo, TodoDraft, TodoMutations } from "./types";
 
 type Draft = Omit<TodoDraft, "items"> & { items: { key: string; topic: string }[] };
-const inputStyle = "w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm";
+const inputStyle = "w-full rounded-md border border-[var(--theme-border-normal)] bg-[var(--theme-chat-message-background)] px-3 py-2 text-sm";
 
 function validate(draft: Draft): string | undefined {
   if (!draft.topic.trim()) return "请输入 Todo 标题。";
@@ -116,9 +116,9 @@ export function TodoEditor({ todo, mutations, onSaved, onClose }: {
         <input className={inputStyle} value={draft.topic} onChange={(e) => change({ ...draft, topic: e.target.value })} />
       </label>
       <label className="block text-sm">优先级
-        <select className={inputStyle} value={draft.priority} onChange={(e) => change({ ...draft, priority: Number(e.target.value) as 0 | 1 })}>
+        <ThemedSelect aria-label="优先级" className={inputStyle} value={draft.priority} onChange={(e) => change({ ...draft, priority: Number(e.target.value) as 0 | 1 })}>
           <option value={0}>普通</option><option value={1}>高优先级</option>
-        </select>
+        </ThemedSelect>
       </label>
       <ol className="list-decimal space-y-2 pl-6">
         {draft.items.map((item, index) => (
@@ -133,13 +133,13 @@ export function TodoEditor({ todo, mutations, onSaved, onClose }: {
           </li>
         ))}
       </ol>
-      <p className="text-xs text-white/50">至少保留两个子项</p>
-      <button type="button" className="rounded-md bg-white/10 px-3 py-2 text-sm"
+      <p className="text-xs text-[var(--theme-text-secondary)]">至少保留两个子项</p>
+      <button type="button" className="rounded-md bg-[var(--theme-chat-message-background)] px-3 py-2 text-sm"
         onClick={() => change({ ...draft, items: [...draft.items, { key: crypto.randomUUID(), topic: "" }] })}>添加子项</button>
-      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
-      <p role="status" className="text-xs text-white/60">{status}</p>
+      {error && <p role="alert" className="text-sm text-[var(--theme-status-error)]">{error}</p>}
+      <p role="status" className="text-xs text-[var(--theme-text-secondary)]">{status}</p>
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={busy} className="rounded-md bg-white/15 px-3 py-2 text-sm disabled:opacity-40">
+        <button type="submit" disabled={busy} className="rounded-md bg-[var(--theme-chat-message-background)] px-3 py-2 text-sm disabled:opacity-40">
           {todo ? "完成编辑" : "创建 Todo"}
         </button>
         {error && todo && <button type="button" disabled={busy} onClick={() => { void finish(false); }}>重试保存</button>}
@@ -152,3 +152,4 @@ export function TodoEditor({ todo, mutations, onSaved, onClose }: {
     </form>
   );
 }
+import { ThemedSelect } from "../theme/ThemedSelect";

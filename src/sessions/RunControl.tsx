@@ -27,7 +27,7 @@ export function RunControl({ api, executing, onReady }: { api: SessionApi; execu
     } catch { setError("无法发送取消请求，请重试。"); cancelling.current = false; setPending(false); }
   }
   return <>
-    {run && executing && <div role="status" className="mb-3 rounded-lg bg-white/5 p-3 text-sm">
+    {run && executing && <div role="status" className="mb-3 rounded-lg bg-[var(--theme-chat-message-background)] p-3 text-sm">
       {pending ? "正在停止执行…" : "正在执行任务…"}
       {api.cancel && <button disabled={pending} className="ml-3 underline disabled:opacity-40" onClick={() => { void cancel(); }}>停止执行</button>}
     </div>}

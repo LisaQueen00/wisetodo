@@ -2,21 +2,19 @@
 
 :root {
   color-scheme: dark;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  --surface-todo: rgb(33 26 43 / 0.16);
-  --priority-high: #ef6a76;
-  --priority-normal: #a881d8;
-  --todo-completed: #b4c7be;
-  --text-primary: #f4eef9;
+  font-family: var(--theme-font, system-ui, sans-serif);
+  --surface-todo: var(--theme-todo-background);
+  --priority-high: var(--theme-todo-priority-high);
+  --priority-normal: var(--theme-todo-priority-normal);
+  --todo-completed: var(--theme-todo-completed-text);
+  --text-primary: var(--theme-text-primary);
   background: transparent;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 
 /* Resolve alpha at the element that owns the preference, not on :root. */
-.app-panel { --surface-window: rgb(23 19 31 / var(--panel-alpha, 0.85)); }
+.app-panel { --surface-window: color-mix(in srgb, var(--theme-window-background) calc(var(--panel-alpha, 0.85) * 100%), transparent); }
 
 * {
   box-sizing: border-box;
@@ -56,10 +54,10 @@ progress {
   border: none;
   border-radius: 999px;
   overflow: hidden;
-  background: #ffffff14;
+  background: var(--theme-status-progress-track);
 }
 
-progress::-webkit-progress-bar { background: #ffffff14; }
+progress::-webkit-progress-bar { background: var(--theme-status-progress-track); }
 progress::-webkit-progress-value { background: var(--todo-accent, var(--priority-normal)); }
 progress::-moz-progress-bar { background: var(--todo-accent, var(--priority-normal)); }
 
@@ -67,8 +65,8 @@ progress::-moz-progress-bar { background: var(--todo-accent, var(--priority-norm
 .todo-card {
   --todo-priority: var(--priority-normal);
   --todo-accent: var(--todo-priority);
-  background: var(--surface-todo);
-  border-color: color-mix(in srgb, var(--todo-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--surface-todo) calc(var(--surface-alpha, 0.625) * 100%), transparent);
+  border-color: var(--theme-todo-border);
   border-inline-start: 3px solid var(--todo-accent);
 }
 
@@ -81,7 +79,7 @@ progress::-moz-progress-bar { background: var(--todo-accent, var(--priority-norm
 
 .todo-card[data-completed="true"]:not([data-editing="true"]) {
   --todo-accent: var(--todo-completed);
-  background: rgb(29 35 36 / 0.2);
+  background: color-mix(in srgb, var(--theme-todo-completed-background) calc(var(--surface-alpha, 0.625) * 100%), transparent);
   opacity: 0.8;
 }
 
@@ -93,14 +91,52 @@ progress::-moz-progress-bar { background: var(--todo-accent, var(--priority-norm
 .todo-card[data-completed="true"]:has([role="alert"]) { opacity: 1; }
 
 :focus-visible {
-  outline: 2px solid var(--priority-normal);
+  outline: 2px solid var(--theme-status-focus);
   outline-offset: 3px;
 }
 @keyframes todo-reveal {
-  0%, 100% { box-shadow: 0 0 0 2px rgb(180 145 250 / 0.2); }
-  50% { box-shadow: 0 0 0 3px rgb(180 145 250 / 0.85); }
+  0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-status-highlight) 20%, transparent); }
+  50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-status-highlight) 85%, transparent); }
 }
 .todo-card[data-reveal="true"] { animation: todo-reveal 2s ease-in-out 5; }
 @media (prefers-reduced-motion: reduce) {
-  .todo-card[data-reveal="true"] { animation: none; outline: 2px solid #b491fa; }
+  .todo-card[data-reveal="true"] { animation: none; outline: 2px solid var(--theme-status-highlight); }
 }
+
+.app-panel > header { background: color-mix(in srgb, var(--theme-window-header) calc(var(--surface-alpha, 0.625) * 100%), transparent); }
+.chat-overlay { background: color-mix(in srgb, var(--theme-chat-background) calc(var(--surface-alpha, 0.625) * 100%), transparent); }
+#model-settings-form { background: var(--theme-settings-background); }
+.app-panel button { background-color: var(--theme-button-background); color: var(--theme-button-text); }
+.app-panel button[type="submit"] { background-color: var(--theme-button-primary-background); color: var(--theme-button-primary-text); }
+.app-panel button:hover:not(:disabled) { background-color: var(--theme-button-hover-background); }
+.app-panel button:disabled { color: var(--theme-button-disabled-text); }
+.app-panel input:not([type="checkbox"]):not([type="range"]):not([type="color"]), .app-panel textarea {
+  background: var(--theme-input-background); color: var(--theme-input-text); border-color: var(--theme-input-border);
+}
+.app-panel input::placeholder, .app-panel textarea::placeholder { color: var(--theme-input-placeholder); }
+.app-panel input[type="checkbox"], .app-panel input[type="range"] { accent-color: var(--theme-status-focus); }
+* { scrollbar-color: var(--theme-border-normal) transparent; }
+
+/* The recovery editor deliberately does not inherit user colors or font size. */
+.theme-dialog { background: #211a2b; color: #f4eef9; border: 1px solid #766786; border-radius: 12px; width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 16px; overflow: auto; font: 14px/1.5 system-ui, sans-serif; }
+.theme-dialog::backdrop { background: #0008; }
+.theme-dialog h2 { font-size: 18px; font-weight: 600; }
+.theme-dialog p { margin: 8px 0; }
+.theme-dialog label, .theme-dialog details, .theme-color-field { display: block; margin-top: 12px; }
+.theme-dialog input:not([type="color"]), .theme-dialog select { width: 100%; }
+#theme-editor input, #theme-editor select { background: #17131f; color: #f4eef9; border: 1px solid #766786; padding: 6px; border-radius: 4px; }
+.app-panel .theme-dialog button, .app-panel .theme-dialog button:hover { background: #44364f; color: #ffffff; padding: 6px 10px; border-radius: 5px; }
+.theme-dialog :focus-visible { outline-color: #cfb5f1; }
+#theme-editor textarea { width: 100%; background: #17131f; color: #f4eef9; border: 1px solid #766786; font: 12px/1.5 monospace; }
+.theme-dialog [role="alert"], .theme-dialog small { color: #ffc1c1; }
+.app-panel .theme-launcher, .app-panel .theme-launcher:hover { background: #44364f; color: #ffffff; }
+.theme-actions, .theme-color-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.theme-color-row input[type="color"] { width: 40px; height: 32px; }
+.theme-color-row input:not([type="color"]) { flex: 1; min-width: 100px; width: auto; }
+
+.themed-select { position: relative; min-width: 0; }
+.app-panel .themed-select > button { width: 100%; text-align: left; background: var(--theme-dropdown-background); color: var(--theme-dropdown-text); border: 1px solid var(--theme-input-border); border-radius: 6px; padding: 6px; }
+.themed-select [role="listbox"] { max-height: 180px; overflow: auto; border: 1px solid var(--theme-border-normal); border-radius: 6px; background: var(--theme-dropdown-background); }
+.app-panel .themed-select [role="option"] { display: block; width: 100%; text-align: left; white-space: normal; overflow-wrap: anywhere; padding: 8px; background: var(--theme-dropdown-background); color: var(--theme-dropdown-text); }
+.app-panel .themed-select [aria-selected="true"] { background: var(--theme-dropdown-item-selected-background); color: var(--theme-dropdown-item-selected-text); }
+.app-panel .themed-select [role="option"]:hover, .app-panel .themed-select [data-active="true"] { background: var(--theme-dropdown-item-hover-background); }

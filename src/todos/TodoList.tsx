@@ -28,8 +28,8 @@ function TodoSection({ title, todos, expandedIds, onToggle, actions, editingId, 
   return (
     <section aria-labelledby={headingId}>
       <header className="mb-3 flex items-center gap-2">
-        <h2 id={headingId} className="text-sm font-medium text-white/70">{title}</h2>
-        <span className="rounded-md bg-white/5 px-2 py-0.5 text-xs tabular-nums text-white/45">
+        <h2 id={headingId} className="text-sm font-medium text-[var(--theme-text-secondary)]">{title}</h2>
+        <span className="rounded-md bg-[var(--theme-chat-message-background)] px-2 py-0.5 text-xs tabular-nums text-[var(--theme-text-muted)]">
           {todos.length}
         </span>
       </header>
@@ -144,7 +144,7 @@ export function TodoList({ todos, actions }: { todos: readonly Todo[]; actions?:
 
   return (
     <div ref={root} className="space-y-7">
-      {actions && <p className="text-xs text-white/45">拖动“排序”到同状态、同优先级的任务上，或使用上移 / 下移。</p>}
+      {actions && <p className="text-xs text-[var(--theme-text-muted)]">拖动“排序”到同状态、同优先级的任务上，或使用上移 / 下移。</p>}
       {dragging && <p role="status">松开后移动到目标位置；不能跨完成状态或优先级。</p>}
       {saving && <p role="status">正在保存排序…</p>}
       {error && <p role="alert">排序保存失败，列表未更改，请重试。</p>}

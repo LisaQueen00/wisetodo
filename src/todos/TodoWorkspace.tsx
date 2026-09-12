@@ -70,9 +70,9 @@ export function TodoWorkspace({ loadTodos, mutations, refreshToken = 0 }: { load
     return <p role="status">正在读取 Todo…</p>;
   }
   if (state.status === "error") return (
-    <div role="alert" className="rounded-xl border border-white/15 p-6">
+    <div role="alert" className="rounded-xl border border-[var(--theme-border-normal)] p-6">
       <p>读取 Todo 失败，请重试。</p>
-      <button className="mt-3 rounded-lg bg-white/10 px-3 py-2" onClick={() => {
+      <button className="mt-3 rounded-lg bg-[var(--theme-chat-message-background)] px-3 py-2" onClick={() => {
         setAttempt((value) => value + 1);
       }}>重新读取</button>
     </div>
@@ -82,16 +82,16 @@ export function TodoWorkspace({ loadTodos, mutations, refreshToken = 0 }: { load
       {mutations && (
         <div className="mb-4">
           {creating ? (
-            <div className="rounded-xl border border-white/15 p-4">
+            <div className="rounded-xl border border-[var(--theme-border-normal)] p-4">
               <TodoEditor mutations={guardedMutations!} onSaved={onSaved} onClose={() => setCreating(false)} />
             </div>
-          ) : <button disabled={busy} className="rounded-md bg-white/10 px-3 py-2 text-sm disabled:opacity-30" onClick={() => setCreating(true)}>新增 Todo</button>}
+          ) : <button disabled={busy} className="rounded-md bg-[var(--theme-chat-message-background)] px-3 py-2 text-sm disabled:opacity-30" onClick={() => setCreating(true)}>新增 Todo</button>}
         </div>
       )}
-      <p role="status" className="mb-4 text-xs text-white/45">共 {state.todos.length} 个 Todo</p>
+      <p role="status" className="mb-4 text-xs text-[var(--theme-text-muted)]">共 {state.todos.length} 个 Todo</p>
       {state.todos.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center">
-          <p>还没有 Todo</p><p className="mt-2 text-sm text-white/45">任务创建后会显示在这里。</p>
+        <div className="rounded-2xl border border-dashed border-[var(--theme-border-normal)] p-8 text-center">
+          <p>还没有 Todo</p><p className="mt-2 text-sm text-[var(--theme-text-muted)]">任务创建后会显示在这里。</p>
         </div>
       ) : null}
       <TodoList todos={state.todos} actions={actions} />

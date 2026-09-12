@@ -38,7 +38,8 @@ it("creates, edits child rows, updates the visible list and retries a failed del
 
   fireEvent.click(screen.getByRole("button", { name: "编辑 Reading" }));
   fireEvent.change(screen.getByLabelText("Todo 标题"), { target: { value: "Reading updated" } });
-  fireEvent.change(screen.getByLabelText("优先级"), { target: { value: "1" } });
+  fireEvent.click(screen.getByRole("combobox", { name: "优先级" }));
+  fireEvent.click(screen.getByRole("option", { name: "高优先级" }));
   fireEvent.click(screen.getByRole("button", { name: "添加子项" }));
   fireEvent.change(screen.getByLabelText("子项 3"), { target: { value: "Chapter 3" } });
   fireEvent.click(screen.getByLabelText("删除子项 1"));

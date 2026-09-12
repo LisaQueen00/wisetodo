@@ -1,6 +1,7 @@
 mod sidecar;
 mod transport;
 mod desktop;
+mod theme;
 
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
@@ -163,7 +164,7 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(desktop::window_event)
-        .invoke_handler(tauri::generate_handler![desktop::desktop_status, desktop::desktop_pin, desktop::desktop_autostart, desktop::desktop_acknowledge, desktop::desktop_restart, health, todos_list, todos_create, todos_update, todos_delete, todos_set_item_completed, todos_move, sessions_list, sessions_get, sessions_create, sessions_delete, sessions_retry, sessions_send, sessions_cancel, settings_get, settings_save, settings_test])
+        .invoke_handler(tauri::generate_handler![theme::theme_export, desktop::desktop_status, desktop::desktop_pin, desktop::desktop_autostart, desktop::desktop_acknowledge, desktop::desktop_restart, health, todos_list, todos_create, todos_update, todos_delete, todos_set_item_completed, todos_move, sessions_list, sessions_get, sessions_create, sessions_delete, sessions_retry, sessions_send, sessions_cancel, settings_get, settings_save, settings_test])
         .build(tauri::generate_context!())
         .expect("error while building WiseTodo")
         .run(|app, event| {
