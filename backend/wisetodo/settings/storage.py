@@ -40,11 +40,13 @@ class SystemCredentialStore:
             if sys.platform == "darwin":
                 from keyring.backends.macOS import Keyring
 
-                return Keyring()
+                # Like the Windows backend, keyring's macOS constructor is untyped.
+                return Keyring()  # type: ignore[no-untyped-call]
             if sys.platform.startswith("linux"):
                 from keyring.backends.SecretService import Keyring as LinuxKeyring
 
-                return LinuxKeyring()
+                # The Secret Service backend also exposes an untyped constructor.
+                return LinuxKeyring()  # type: ignore[no-untyped-call]
             raise RuntimeError("Unsupported platform")
         except Exception:
             raise SettingsStorageError("System credential storage is unavailable") from None

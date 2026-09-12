@@ -44,12 +44,16 @@ def pdf_handler(references: FileReferences) -> LocalHandler:
             if getattr(sys, "frozen", False)
             else [sys.executable, "-m", "wisetodo.files.pdf_worker"]
         )
+        # Use a platform guard so type checkers exclude Windows-only constants on Unix.
+        creationflags = 0
+        if sys.platform == "win32":
+            creationflags = subprocess.CREATE_NO_WINDOW
         process = await asyncio.create_subprocess_exec(
             *command,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
-            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+            creationflags=creationflags,
         )
         try:
             async with asyncio.timeout(25):
