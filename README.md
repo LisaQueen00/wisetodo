@@ -7,11 +7,14 @@ The project is currently in early development.
 Phase 8 Windows test delivery: [capabilities and acceptance boundaries](docs/phase8-delivery.md).
 Custom themes: [v2 theme guide](docs/themes.md).
 
+Install and launch: [user guide](docs/getting-started.md). Current packages are unsigned test builds; macOS/Linux still require native CI and device acceptance.
+
 ## Development
 
 Local design and setup notes live under `.local/` and are intentionally excluded from Git.
 
-Prerequisites and commands are documented locally in `.local/SETUP.md`.
+Public prerequisites and native build commands: [build guide](docs/building.md).
+Contributor checks: [CONTRIBUTING.md](CONTRIBUTING.md). Local working notes remain in `.local/SETUP.md`.
 
 Skill and Tool configuration: [setup guide](docs/tool-setup.md).
 

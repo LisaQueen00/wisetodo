@@ -65,22 +65,12 @@ jobs:
           python scripts/prepare_release.py
           python -m pytest backend/tests -q
           python -m ruff check backend scripts
-          python -m mypy backend/wisetodo
+          python -m mypy --config-file backend/pyproject.toml backend/wisetodo
           pnpm lint
           pnpm test
           cargo test --locked --manifest-path src-tauri/Cargo.toml
-      - name: Freeze and smoke-test Sidecar
-        run: python scripts/build_sidecar.py
-      - name: Bundle desktop
-        run: pnpm exec tauri build --config src-tauri/tauri.bundle.conf.json --bundles ${{ matrix.bundle }} -- --locked
-      - name: Installer checksums
-        run: |
-          shopt -s nullglob
-          artifacts=(src-tauri/target/release/bundle/*/*.exe src-tauri/target/release/bundle/*/*.deb src-tauri/target/release/bundle/*/*.dmg)
-          test "${#artifacts[@]}" -gt 0
-          for artifact in "${artifacts[@]}"; do
-            python scripts/prepare_release.py --artifact "$artifact"
-          done
+      - name: Native package, frozen acceptance and checksums
+        run: python scripts/build_release.py
       - uses: actions/upload-artifact@v4
         # Bundle artifacts and checksums; no repository/user data.
         with:

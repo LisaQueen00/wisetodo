@@ -31,4 +31,6 @@ macOS/Linux 将参数替换为对应 `.dmg`/`.deb` 文件。更新版本时同�
 
 ## 当前本地交付物
 
-Windows x64 集成版：`src-tauri/target/phase8-final/release/bundle/nsis/WiseTodo_0.1.0_x64-setup.exe`；直接运行版位于该 target 的 `release/wisetodo.exe`，需保留同目录 Sidecar。此前阶段路径是历史构建记录，部分已经清理。标准构建未指定 CARGO_TARGET_DIR 时仍输出 target/release。构建详情见 [building.md](building.md)。目录已被 Git 忽略；无需将二进制或校验文件提交到源码仓库。本地准备完成不代表上述人工关卡通过。
+最新 Windows 测试交付统一到 `src-tauri/target/distribution/release/`：安装包位于 `bundle/nsis/`，双 EXE 直接运行 ZIP 位于 `bundle/direct-run/`，各有 SHA256；目录中的 wisetodo.exe 也可直接运行，但需保留同目录 Sidecar。打开方式见 [用户指南](getting-started.md)。此前 phase8-final/phase8-ui 等路径是历史构建记录。标准构建未指定 CARGO_TARGET_DIR 时仍输出 target/release。
+
+macOS/Linux 已准备原生构建脚本和 CI，尚未在本次 Windows 环境生成或验证 DMG/DEB；维护者提交后在 Actions 运行并审查结果。构建详情见 [building.md](building.md)。产物目录已被 Git 忽略；无需将二进制或校验文件提交到源码仓库。本地准备完成不代表上述人工关卡通过。
