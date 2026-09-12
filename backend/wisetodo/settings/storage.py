@@ -35,7 +35,8 @@ class SystemCredentialStore:
             if sys.platform == "win32":
                 from keyring.backends.Windows import WinVaultKeyring
 
-                return WinVaultKeyring()
+                # keyring's Windows constructor lacks annotations; the class is a KeyringBackend.
+                return WinVaultKeyring()  # type: ignore[no-untyped-call]
             if sys.platform == "darwin":
                 from keyring.backends.macOS import Keyring
 

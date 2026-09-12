@@ -4,6 +4,9 @@ WiseTodo is a lightweight, always-on-top desktop Todo application with an agent-
 
 The project is currently in early development.
 
+Phase 8 Windows test delivery: [capabilities and acceptance boundaries](docs/phase8-delivery.md).
+Custom themes: [v2 theme guide](docs/themes.md).
+
 ## Development
 
 Local design and setup notes live under `.local/` and are intentionally excluded from Git.
