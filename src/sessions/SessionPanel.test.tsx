@@ -200,8 +200,8 @@ it("adds and removes URL attachments, preserves them on failure and sends withou
 
 it("accepts file drops, removes references and persists a file-only message", async () => {
   const service = api();
-  let drop!: (paths: string[], x: number, y: number) => void;
-  service.listenFileDrops = vi.fn(async (handler) => { drop = handler; return vi.fn(); });
+  const listenFileDrops = vi.fn<NonNullable<SessionApi["listenFileDrops"]>>(async () => vi.fn<() => void>());
+  service.listenFileDrops = listenFileDrops;
   vi.mocked(service.send).mockImplementation(async (id, messageId, content, urls, files) => ({ ...first, messages: [{
     id: messageId, session_id: id, position: 0, role: "user", content, attachments: [...(urls ?? []), ...(files ?? [])], created_at: "date",
   }] }));
@@ -210,6 +210,9 @@ it("accepts file drops, removes references and persists a file-only message", as
   await screen.findByRole("heading", { name: "First" });
   const input = screen.getByRole("textbox", { name: "聊天输入" });
   vi.spyOn(input, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, right: 100, bottom: 100 } as DOMRect);
+  // Visible content can precede the passive effect that registers native file drops.
+  await waitFor(() => expect(listenFileDrops).toHaveBeenCalled());
+  const drop = listenFileDrops.mock.lastCall![0];
   await act(async () => { drop(["D:/book.pdf", "D:/book.pdf"], 20, 20); });
   expect(screen.getAllByLabelText("移除文件 D:/book.pdf")).toHaveLength(1);
   fireEvent.click(screen.getByLabelText("移除文件 D:/book.pdf"));
