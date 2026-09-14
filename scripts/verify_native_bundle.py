@@ -65,7 +65,7 @@ def verify_deb(package: Path) -> None:
 
 
 def verify_dmg(package: Path) -> None:
-    # Validate the shipped copy as well as the pre-DMG application bundle.
+    # Tauri may remove the intermediate .app after DMG creation; validate the shipped copy.
     with tempfile.TemporaryDirectory(prefix="wisetodo-dmg-check-") as directory:
         mount = Path(directory) / "volume"
         mount.mkdir()

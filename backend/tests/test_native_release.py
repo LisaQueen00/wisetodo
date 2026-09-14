@@ -1,4 +1,5 @@
 import runpy
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -51,3 +52,38 @@ def test_builder_help_is_non_mutating(script, monkeypatch):
     with pytest.raises(SystemExit) as result:
         script["main"]()
     assert result.value.code == 0
+
+
+@pytest.mark.parametrize("validation_fails", [False, True])
+def test_macos_validates_final_dmg_without_intermediate_app(
+    script, monkeypatch, tmp_path, validation_fails
+):
+    main = script["main"]
+    namespace = main.__globals__
+    dmg = tmp_path / "release/bundle/dmg/WiseTodo_0.1.0_aarch64.dmg"
+    dmg.parent.mkdir(parents=True)
+    dmg.touch()
+    assert not (tmp_path / "release/bundle/macos/WiseTodo.app").exists()
+    monkeypatch.setattr(sys, "argv", ["build_release.py"])
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setenv("CARGO_TARGET_DIR", str(tmp_path))
+    monkeypatch.setattr(namespace["shutil"], "which", lambda name: name)
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: None)
+    checked = []
+    checksums = []
+
+    def verify(path):
+        checked.append(path)
+        if validation_fails:
+            raise ValueError("invalid final application")
+
+    monkeypatch.setitem(namespace, "verify_dmg", verify)
+    monkeypatch.setitem(namespace, "checksum", lambda *args: checksums.append(args))
+    if validation_fails:
+        with pytest.raises(ValueError, match="invalid final application"):
+            main()
+        assert not checksums
+    else:
+        main()
+        assert checksums == [(dmg, "0.1.0")]
+    assert checked == [dmg]

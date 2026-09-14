@@ -7,7 +7,7 @@
 这不是 Developer ID 签名或 Apple 公证，不能保证 Gatekeeper 放行；不要关闭系统安全防护。
 参见 [Tauri ad-hoc signing](https://v2.tauri.app/distribute/sign/macos/#ad-hoc-signing)。
 
-统一构建入口现在会校验 macOS `.app` 的 ICNS 引用、资源封装以及主程序/Sidecar/完整应用签名，再只读挂载最终 DMG 检查其中的应用副本并卸载挂载点。
+统一构建入口只读挂载最终 DMG，校验其中 `.app` 的 ICNS 引用、资源封装以及主程序/Sidecar/完整应用签名，最后卸载挂载点。不依赖 Tauri 在 DMG 生成后可能清理的中间 `.app`。
 Linux 则直接读取 DEB 内容，检查 `.desktop` 的 Icon 能匹配包内 hicolor PNG；不安装软件。
 任何检查失败都会阻止校验文件生成及后续 CI artifact 上传。Windows 本地测试不能代替这两端的原生检查。
 
