@@ -1,0 +1,359 @@
+{
+  "schemaVersion": 2,
+  "palette": {
+    "transparent": "#00000000",
+    "window": "#17131f",
+    "surface": "#211a2b",
+    "control": "#302739",
+    "hover": "#40334e",
+    "pressed": "#4d3c60",
+    "text": "#f4eef9",
+    "muted": "#b9afc5",
+    "disabled": "#81758e",
+    "border": "#655273",
+    "accent": "#a881d8",
+    "high": "#ef6a76",
+    "completed": "#b4c7be",
+    "error": "#fca5a5",
+    "track": "#ffffff14"
+  },
+  "name": "WiseTodo 完整编辑模板",
+  "font": {
+    "family": "system",
+    "sizePx": 16
+  },
+  "colors": {
+    "text": {
+      "primary": "#f4eef9",
+      "secondary": "#ffffff99",
+      "muted": "#ffffff73"
+    },
+    "window": {
+      "background": "#17131f",
+      "header": "#00000000"
+    },
+    "todo": {
+      "background": "#211a2b29",
+      "border": "#a881d859",
+      "priorityHigh": "#ef6a76",
+      "priorityNormal": "#a881d8",
+      "completedText": "#b4c7be",
+      "completedBackground": "#1d232433"
+    },
+    "chat": {
+      "background": "#00000000",
+      "messageBackground": "#ffffff0d"
+    },
+    "settings": {
+      "background": "#ffffff0d"
+    },
+    "border": {
+      "normal": "#ffffff26"
+    },
+    "button": {
+      "background": "#ffffff1a",
+      "text": "#f4eef9",
+      "hoverBackground": "#ffffff26",
+      "primaryBackground": "#c084fc33",
+      "primaryText": "#f4eef9",
+      "disabledText": "#ffffff66"
+    },
+    "input": {
+      "background": "#ffffff0d",
+      "text": "#f4eef9",
+      "placeholder": "#ffffff4d",
+      "border": "#ffffff26"
+    },
+    "dropdown": {
+      "background": "#211a2b",
+      "text": "#f4eef9",
+      "itemHoverBackground": "#ffffff26",
+      "itemSelectedBackground": "#a881d833",
+      "itemSelectedText": "#f4eef9"
+    },
+    "status": {
+      "error": "#fca5a5",
+      "success": "#a7f3d0",
+      "warning": "#fde68a",
+      "focus": "#a881d8",
+      "highlight": "#b491fa",
+      "progressTrack": "#ffffff14"
+    }
+  },
+  "components": {
+    "global": {
+      "default": {"text":{"ref":"text"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "window": {
+      "default": {"background":{"type":"linear","angle":150,"stops":[{"color":{"ref":"window"},"position":0},{"color":{"ref":"surface"},"position":100}]},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "header": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "appTitle": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":20,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":20,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":20,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":20,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "subtitle": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"muted"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"muted"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"muted"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"muted"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "todoList": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "todoCard": {
+      "default": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "completed": {"background":{"ref":"surface"},"text":{"ref":"completed"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "todoTitle": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "todoTitleButton": {
+      "default": {"background":{"ref":"control"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "disabled": {"background":{"ref":"control"},"text":{"ref":"disabled"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":600,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "completedTitle": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"completed"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"line-through"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"completed"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"line-through"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"completed"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"line-through"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"completed"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"line-through"}}
+    },
+    "todoItem": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "completed": {"background":{"ref":"transparent"},"text":{"ref":"completed"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "todoItemText": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "completed": {"background":{"ref":"transparent"},"text":{"ref":"completed"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "todoNumber": {
+      "default": {"text":{"ref":"muted"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "priority": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "priorityHigh": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"high"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"high"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"high"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"high"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "priorityNormal": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"accent"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"accent"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"accent"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"accent"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "progressTrack": {
+      "default": {"background":{"ref":"track"}}
+    },
+    "progressFill": {
+      "default": {"background":{"ref":"accent"}}
+    },
+    "checkbox": {
+      "default": {"accent":{"ref":"accent"}},
+      "hover": {"accent":{"ref":"accent"}},
+      "active": {"accent":{"ref":"accent"}},
+      "focus": {"accent":{"ref":"accent"}},
+      "disabled": {"accent":{"ref":"accent"}},
+      "selected": {"accent":{"ref":"accent"}}
+    },
+    "slider": {
+      "default": {"accent":{"ref":"accent"}},
+      "hover": {"accent":{"ref":"accent"}},
+      "active": {"accent":{"ref":"accent"}},
+      "focus": {"accent":{"ref":"accent"}},
+      "disabled": {"accent":{"ref":"accent"}}
+    },
+    "chatPanel": {
+      "default": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "userMessage": {
+      "default": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "assistantMessage": {
+      "default": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "systemMessage": {
+      "default": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "messageRole": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "messageText": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "attachment": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "sessionRow": {
+      "default": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "sessionButton": {
+      "default": {"background":{"ref":"control"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "disabled": {"background":{"ref":"control"},"text":{"ref":"disabled"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "selected": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "composer": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "chatInput": {
+      "default": {"background":{"ref":"control"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "disabled": {"background":{"ref":"control"},"text":{"ref":"disabled"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "stage": {
+      "default": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "toolEvent": {
+      "default": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "modelSettings": {
+      "default": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"surface"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "label": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "helpText": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"muted"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"muted"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"muted"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"muted"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "button": {
+      "default": {"background":{"ref":"control"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "disabled": {"background":{"ref":"control"},"text":{"ref":"disabled"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "primaryButton": {
+      "default": {"background":{"ref":"control"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "disabled": {"background":{"ref":"control"},"text":{"ref":"disabled"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "input": {
+      "default": {"background":{"ref":"control"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "disabled": {"background":{"ref":"control"},"text":{"ref":"disabled"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "placeholder": {
+      "default": {"text":{"ref":"muted"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "dropdown": {
+      "default": {"background":{"ref":"control"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "disabled": {"background":{"ref":"control"},"text":{"ref":"disabled"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "dropdownMenu": {
+      "default": {"background":{"ref":"control"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "dropdownOption": {
+      "default": {"background":{"ref":"control"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"hover"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "disabled": {"background":{"ref":"control"},"text":{"ref":"disabled"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "selected": {"background":{"ref":"pressed"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "error": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"error"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"error"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"error"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"error"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "notice": {
+      "default": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "hover": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "active": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}},
+      "focus": {"background":{"ref":"transparent"},"text":{"ref":"text"},"border":{"ref":"border"},"shadow":{"ref":"transparent"},"typography":{"fontFamily":"system","fontSize":14,"fontWeight":400,"fontStyle":"normal","lineHeight":1.5,"letterSpacing":0,"textDecoration":"none"}}
+    },
+    "scrollbarThumb": {
+      "default": {"background":{"ref":"accent"}}
+    },
+    "scrollbarTrack": {
+      "default": {"background":{"ref":"track"}}
+    }
+  }
+}

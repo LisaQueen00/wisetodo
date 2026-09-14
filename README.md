@@ -73,7 +73,7 @@ pnpm.cmd tauri dev
 
 - [安装与首次使用](docs/getting-started.md)：下载、打开、设置、升级和校验。
 - [构建与打包](docs/building.md)：三平台环境、命令和产物目录。
-- [主题指南](docs/themes.md)：主题 JSON 与组件样式。
+- [主题指南](docs/themes.md)：主题 JSON 与组件样式；[完整可编辑模板](docs/theme-v2.full.json) 与 [修改说明](docs/theme-template.md)。
 - [Skill / Tool 配置](docs/tool-setup.md)：扩展与覆盖内置能力。
 - [贡献指南](CONTRIBUTING.md)：开发检查、测试和提交注意事项。
 - [发布检查清单](docs/releasing.md) · [更新记录](CHANGELOG.md)。
