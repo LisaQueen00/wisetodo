@@ -1,5 +1,8 @@
 {
   "bundle": {
-    "externalBin": ["binaries/wisetodo-sidecar"]
+    "externalBin": ["binaries/wisetodo-sidecar"],
+    "macOS": {
+      "signingIdentity": "-"
+    }
   }
 }

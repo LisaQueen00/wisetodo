@@ -1,5 +1,16 @@
 # 三平台构建
 
+## macOS 签名与应用菜单图标修复
+
+桌面图标通过 `bundle.icon` 显式收集现有 PNG、ICNS、ICO，不更换 Logo。
+发布配置使用 `bundle.macOS.signingIdentity: "-"`，由 Tauri 在生成 DMG 前对应用包和嵌套代码执行 ad-hoc 签名。
+这不是 Developer ID 签名或 Apple 公证，不能保证 Gatekeeper 放行；不要关闭系统安全防护。
+参见 [Tauri ad-hoc signing](https://v2.tauri.app/distribute/sign/macos/#ad-hoc-signing)。
+
+统一构建入口现在会校验 macOS `.app` 的 ICNS 引用、资源封装以及主程序/Sidecar/完整应用签名，再只读挂载最终 DMG 检查其中的应用副本并卸载挂载点。
+Linux 则直接读取 DEB 内容，检查 `.desktop` 的 Icon 能匹配包内 hicolor PNG；不安装软件。
+任何检查失败都会阻止校验文件生成及后续 CI artifact 上传。Windows 本地测试不能代替这两端的原生检查。
+
 本流程生成未签名测试安装包，不自动发布版本。GitHub Actions 的 `Desktop builds` 在 PR、main/master 推送或手动触发时运行，只有仓库读取权限；不使用模型密钥。
 
 | Runner | 原生架构 | 产物 |

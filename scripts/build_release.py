@@ -10,6 +10,7 @@ import zipfile
 from pathlib import Path
 
 from prepare_release import checksum, release_version
+from verify_native_bundle import verify_deb, verify_dmg, verify_macos
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -95,7 +96,13 @@ def main() -> None:
     artifacts = list((release / "bundle" / bundle).glob(f"*_{version}_*{suffix}"))
     if not artifacts:
         raise RuntimeError("No matching installer was produced")
+    if sys.platform == "darwin":
+        verify_macos(release / "bundle/macos/WiseTodo.app")
     for artifact in artifacts:
+        if sys.platform == "darwin":
+            verify_dmg(artifact)
+        if sys.platform.startswith("linux"):
+            verify_deb(artifact)
         print(checksum(artifact, version))
     shutil.copy2(ROOT / "docs/getting-started.md", release / "bundle/START-HERE.md")
     if sys.platform == "win32":

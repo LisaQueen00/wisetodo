@@ -1,5 +1,8 @@
 # 0.1.0 发布准备
 
+安装反馈：用户确认 Windows 安装正常、Linux 安装成功（不等于全功能验收）；macOS 15.5/M1 的旧包仅有 linker ad-hoc 签名，资源封装验证失败，不能发布该旧包。Linux/macOS 应用菜单图标也需使用新包复验。
+源码现已补齐桌面图标配置、macOS 完整 ad-hoc 签名和包内资源验证。需要新提交的原生 CI 生成新 DMG/DEB 后复测；ad-hoc 不等于 Developer ID/公证，不宣称 Gatekeeper 自动放行。
+
 当前是测试版本准备，不是正式发布公告。Phase 8 已集成桌面体验、主题及默认资料读取链路，实际能力和验收边界见 [集成交付说明](phase8-delivery.md)。保留 package.json、Tauri、Cargo、Python 的 0.1.0，Cargo.lock 同步检查；不自动创建 Git 标签或 GitHub Release。
 
 ## 版本与校验文件
